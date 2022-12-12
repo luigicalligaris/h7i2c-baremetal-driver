@@ -37,6 +37,8 @@
 #ifndef INC_H7I2C_BARE_H_
 #define INC_H7I2C_BARE_H_
 
+#include "stdint.h"
+
 #include "main.h"
 
 typedef enum

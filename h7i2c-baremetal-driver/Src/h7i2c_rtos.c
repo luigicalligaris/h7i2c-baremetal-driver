@@ -49,11 +49,9 @@
 static SemaphoreHandle_t h7i2c_i2c_mutex_rtos = NULL;
 static StaticSemaphore_t h7i2c_i2c_mutex_rtos_buffer;
 
-static int h7i2c_i2c_mutex_lock(uint32_t timeout)
+int h7i2c_i2c_mutex_lock(uint32_t timeout)
 {
-	while(1);
-
-  uint32_t const timestart = HAL_GetTick();
+	uint32_t const timestart = HAL_GetTick();
 
   while (h7i2c_i2c_mutex_rtos == NULL)
   {
@@ -79,13 +77,13 @@ static int h7i2c_i2c_mutex_lock(uint32_t timeout)
   return H7I2C_RET_CODE_BUSY;
 }
 
-static void h7i2c_i2c_mutex_release()
+void h7i2c_i2c_mutex_release()
 {
 	if (h7i2c_i2c_mutex_rtos != NULL)
 		xSemaphoreGive(h7i2c_i2c_mutex_rtos);
 }
 
-static void h7i2c_i2c_mutex_release_fromISR()
+void h7i2c_i2c_mutex_release_fromISR()
 {
 	if (h7i2c_i2c_mutex_rtos != NULL)
 	{
@@ -97,7 +95,7 @@ static void h7i2c_i2c_mutex_release_fromISR()
 }
 
 
-static int h7i2c_i2c_rtos_waitidle(uint32_t timeout)
+int h7i2c_i2c_rtos_waitidle(uint32_t timeout)
 {
 	uint32_t const timestart = HAL_GetTick();
 
