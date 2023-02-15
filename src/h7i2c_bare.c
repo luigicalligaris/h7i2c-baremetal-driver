@@ -17,7 +17,7 @@
 /*   list of conditions and the following disclaimer in the documentation and/or             */
 /*   other materials provided with the distribution.                                         */
 /*                                                                                           */
-/* * Neither the name of the {organization} nor the names of its                             */
+/* * Neither the name of SPRACE nor the one of UNESP nor the names of its                    */
 /*   contributors may be used to endorse or promote products derived from                    */
 /*   this software without specific prior written permission.                                */
 /*                                                                                           */
@@ -34,11 +34,15 @@
 /*                                                                                           */
 /*********************************************************************************************/
 
-#include "h7i2c_bare.h"
+#include "main.h"
+
 #include <string.h>
 
 #include "stm32h7xx_hal_gpio.h"
 #include "stm32h7xx_hal_rcc.h"
+
+#include "h7i2c_bare.h"
+
 
 h7i2c_i2c_fsm_state_t  h7i2c_i2c_fsm_state = H7I2C_FSM_STATE_UNINITIALIZED;
 uint32_t             h7i2c_i2c_slave_address;
