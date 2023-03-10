@@ -1,7 +1,7 @@
 
 /*********************************************************************************************/
 /* STM32H7 I2C bare-metal driver                                                             */
-/* Copyright (c) 2022, Luigi Calligaris                                                      */
+/* Copyright (c) 2022-2023, Luigi Calligaris                                                 */
 /* All rights reserved.                                                                      */
 /*                                                                                           */
 /* This software is distributed under the BSD (3-clause) license, which is reproduced below: */
@@ -39,6 +39,8 @@
 
 #include "stdint.h"
 
+#include "h7i2c_config.h"
+
 typedef enum
 {
   H7I2C_FSM_STATE_UNINITIALIZED,
@@ -72,7 +74,37 @@ typedef enum
 	H7I2C_RET_CODE_ERROR
 } h7i2c_i2c_ret_code_t;
 
+enum {H7I2C_I2C_MUTEX_UNLOCKED = 0, H7I2C_I2C_MUTEX_LOCKED = 1};
 
+typedef struct h7i2c_driver_instance_state_t
+{
+  h7i2c_i2c_fsm_state_t fsm_state;
+
+  uint8_t  mutex;
+
+  void*    i2c_base;
+
+  uint32_t slave_address;
+
+  uint32_t cr1_value;
+  uint32_t cr2_value;
+
+  uint32_t wr_todo;
+  uint32_t wr_done;
+  uint8_t* wr_data;
+
+  uint32_t rd_todo;
+  uint32_t rd_done;
+  uint8_t* rd_data;
+
+  uint32_t timestart;
+  uint32_t timeout;
+} h7i2c_driver_instance_state_t;
+
+int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_t timeout);
+void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance);
+void h7i2c_i2c_mutex_release_fromISR(h7i2c_driver_instance_state_t* instance);
+int h7i2c_i2c_is_managed_by_this_driver(h7i2c_driver_instance_state_t* instance);
 
 void h7i2c_i2c_init();
 void h7i2c_deinit();

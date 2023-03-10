@@ -34,42 +34,28 @@
 /*                                                                                           */
 /*********************************************************************************************/
 
+#ifndef INC_H7I2C_CONFIG_H_
+#define INC_H7I2C_CONFIG_H_
 
-#ifndef INC_H7I2C_RTOS_H_
-#define INC_H7I2C_RTOS_H_
 
-#include "stdint.h"
+// Use these defines to put the peripheral under the responsibility of this driver.
+// You shall mind about collisions with the STM32Cube driver (if you use this driver,
+// the peripheral should be unconfigured in the IOC file).
+#define H7I2C_PERIPH_ENABLE_I2C1 1
+#define H7I2C_PERIPH_ENABLE_I2C2 1
+#define H7I2C_PERIPH_ENABLE_I2C3 1
+#define H7I2C_PERIPH_ENABLE_I2C4 1
 
-#include "h7i2c_config.h"
+// Do you want to use the FreeRTOS-compatible function implementations?
+#define H7I2C_USE_FREERTOS_IMPL 1
 
-int h7i2c_i2c_write_rtos_blocking(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
-int h7i2c_i2c_read_rtos_blocking(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
 
-int h7i2c_i2c_write_then_read_rtos_blocking(uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
+// Do not edit this logic if you don't understand it
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1 || H7I2C_PERIPH_ENABLE_I2C2 == 1 || H7I2C_PERIPH_ENABLE_I2C3 == 1 || H7I2C_PERIPH_ENABLE_I2C4 == 1
+#define H7I2C_PERIPH_ENABLE_ANY 1
+#else
+#define H7I2C_PERIPH_ENABLE_ANY 0
+#endif
 
-int h7i2c_smbus_quickcommand_write_rtos_blocking(uint16_t dev_address, uint32_t timeout);
-int h7i2c_smbus_quickcommand_read_rtos_blocking(uint16_t dev_address, uint32_t timeout);
 
-int h7i2c_smbus_sendbyte_rtos_blocking(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_receivebyte_rtos_blocking(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
-
-int h7i2c_smbus_writebyte_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_readbyte_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
-
-int h7i2c_smbus_writeword_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
-int h7i2c_smbus_readword_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
-
-int h7i2c_smbus_processcall_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
-
-int h7i2c_smbus_blockwrite_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
-int h7i2c_smbus_blockread_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
-
-int h7i2c_smbus_blockwritereadprocesscall_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
-
-int h7i2c_smbus_write32_rtos_blocking(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
-int h7i2c_smbus_read32_rtos_blocking(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
-
-int h7i2c_smbus_write64_rtos_blocking(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-int h7i2c_smbus_read64_rtos_blocking(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-
-#endif /* INC_H7I2C_RTOS_H_ */
+#endif // INC_H7I2C_CONFIG_H_

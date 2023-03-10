@@ -1,8 +1,7 @@
 
-
 /*********************************************************************************************/
 /* STM32H7 I2C bare-metal driver                                                             */
-/* Copyright (c) 2022, Luigi Calligaris                                                      */
+/* Copyright (c) 2022-2023, Luigi Calligaris                                                 */
 /* All rights reserved.                                                                      */
 /*                                                                                           */
 /* This software is distributed under the BSD (3-clause) license, which is reproduced below: */
@@ -40,6 +39,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+
+#include "h7i2c_config.h"
 
 #include "h7i2c_rtos.h"
 #include "h7i2c_bare.h"
