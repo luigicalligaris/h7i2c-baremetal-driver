@@ -50,11 +50,13 @@
 #include "task.h"
 #include "semphr.h"
 
+#include "h7i2c_bare.h"
+
 typedef struct h7i2c_rtos_driver_instance_state_t
 {
   h7i2c_driver_instance_state_t* bare_driver_instance;
-  SemaphoreHandle_t h7i2c_i2c_mutex_rtos;
-  StaticSemaphore_t h7i2c_i2c_mutex_rtos_buffer;
+  SemaphoreHandle_t mutex_rtos;
+  StaticSemaphore_t mutex_rtos_buffer;
 } h7i2c_rtos_driver_instance_state_t;
 
 
@@ -88,6 +90,6 @@ int h7i2c_smbus_read32_rtos_blocking(h7i2c_driver_instance_state_t* instance, ui
 int h7i2c_smbus_write64_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
 int h7i2c_smbus_read64_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
 
-#endif // H7I2C_USE_FREERTOS_IMPL
+#endif /* H7I2C_USE_FREERTOS_IMPL */
 
 #endif /* INC_H7I2C_RTOS_H_ */

@@ -41,6 +41,8 @@
 #include "stm32h7xx_hal_gpio.h"
 #include "stm32h7xx_hal_rcc.h"
 
+#include "stm32h745xx.h"
+
 #include "h7i2c_config.h"
 
 #include "h7i2c_bare.h"
@@ -169,7 +171,7 @@ __weak int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_
   uint32_t const timestart = HAL_GetTick();
 
   if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(&(instance->mutex)))
-  {.
+  {
     if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, &(instance->mutex)))
     {
       __DMB();// Data Memory Barrier
@@ -293,7 +295,7 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
 
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
@@ -320,11 +322,11 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
     Error_Handler();
   }
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
       // When the M7 core pauses we want the I2C1 timeout counter to pause as well
-      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C1, DBGMCU_APB1FZ1_DBG_I2C1);
+      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C1, DBGMCU_APB1LFZ1_DBG_I2C1);
 
       __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -333,7 +335,7 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
 
       // GPIOB OSPEEDR: Set very high speed = 0b11 to pins PB6 and PB7
       MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 12 | 0b11 << 14, 0b11 << 12 | 0b11 << 14);
-2
+
       // GPIOB PUPDR: Set pull-up = 0b01 to pins PB6 and PB7
       MODIFY_REG(GPIOB->PUPDR, 0b11 << 12 | 0b11 << 14, 0b01 << 12 | 0b01 << 14);
 
@@ -376,7 +378,7 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
 
     case I2C2_BASE:
       // When the M7 core pauses we want the I2C2 timeout counter to pause as well
-      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C2, DBGMCU_APB1FZ1_DBG_I2C2);
+      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C2, DBGMCU_APB1LFZ1_DBG_I2C2);
 
       __HAL_RCC_GPIOF_CLK_ENABLE();
 
@@ -428,7 +430,7 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
 
     case I2C3_BASE:
       // When the M7 core pauses we want the I2C3 timeout counter to pause as well
-      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C3, DBGMCU_APB1FZ1_DBG_I2C3);
+      MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C3, DBGMCU_APB1LFZ1_DBG_I2C3);
 
       __HAL_RCC_GPIOA_CLK_ENABLE();
       __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -456,7 +458,7 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       // GPIOA MODER: Set alternate mode = 0b10 to pins PA8
       MODIFY_REG(GPIOA->MODER, 0b11 << 16, 0b10 << 16);
       // GPIOC MODER: Set alternate mode = 0b10 to pins PC9
-      MODIFY_REG(GPIOCf->MODER, 0b11 << 18, 0b10 << 18);
+      MODIFY_REG(GPIOC->MODER, 0b11 << 18, 0b10 << 18);
 
       __HAL_RCC_I2C3_CLK_ENABLE();
 
@@ -557,7 +559,7 @@ void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
   h7i2c_i2c_reset_peripheral_full(instance);
 
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
       // Disable the I2C1 interrupts in NVIC
@@ -673,17 +675,17 @@ int h7i2c_clear_error_state(h7i2c_driver_instance_state_t* instance)
 void I2C1_EV_IRQHandler(void)
 {
   uint32_t const isr = I2C1->ISR;
-  H7I2C_I2C1->cr1_value = I2C1->CR1;
-  H7I2C_I2C1->cr2_value = I2C1->CR2;
+  H7I2C_I2C1.cr1_value = I2C1->CR1;
+  H7I2C_I2C1.cr2_value = I2C1->CR2;
 
   // Reminder: RXNE is cleared by reading the I2C_RXDR register
   if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
   {
-    H7I2C_I2C1->rd_data[H7I2C_I2C1->rd_done] = I2C1->RXDR;
-    --(H7I2C_I2C1->rd_todo);
-    ++(H7I2C_I2C1->rd_done);
-    if (H7I2C_I2C1->rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_RXIE);
+    H7I2C_I2C1.rd_data[H7I2C_I2C1.rd_done] = I2C1->RXDR;
+    --(H7I2C_I2C1.rd_todo);
+    ++(H7I2C_I2C1.rd_done);
+    if (H7I2C_I2C1.rd_todo == 0U)
+      CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_RXIE);
   }
 
   // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
@@ -691,67 +693,67 @@ void I2C1_EV_IRQHandler(void)
   {
     if (READ_BIT(isr, I2C_ISR_TXE) != 0)
     {
-      I2C1->TXDR = H7I2C_I2C1->wr_data[H7I2C_I2C1->wr_done];
-      --(H7I2C_I2C1->wr_todo);
-      ++(H7I2C_I2C1->wr_done);
-      if (H7I2C_I2C1->wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_TXIE);
+      I2C1->TXDR = H7I2C_I2C1.wr_data[H7I2C_I2C1.wr_done];
+      --(H7I2C_I2C1.wr_todo);
+      ++(H7I2C_I2C1.wr_done);
+      if (H7I2C_I2C1.wr_todo == 0U)
+        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE);
     }
   }
 
   // Reminder: TC is cleared by writing START = 1 or STOP = 1
   if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
   {
-    uint32_t const fsm_state_copy = (H7I2C_I2C1->fsm_state);
+    uint32_t const fsm_state_copy = (H7I2C_I2C1.fsm_state);
     switch(fsm_state_copy)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C1->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C1->rd_todo > 255UL)
+        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C1.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_AUTOEND);
+        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
+        if (H7I2C_I2C1.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C1->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          SET_BIT   (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C1->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
         }
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C1->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C1.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
         // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C1->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
+        MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_START);
-        H7I2C_I2C1->rd_todo = H7I2C_I2C1->rd_data[0];
-        H7I2C_I2C1->rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C1->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_START);
+        H7I2C_I2C1.rd_todo = H7I2C_I2C1.rd_data[0];
+        H7I2C_I2C1.rd_done = 1U;
+        MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
         break;
 
       case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_STOP);
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C1->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_STOP);
         break;
 
       default:
@@ -762,34 +764,34 @@ void I2C1_EV_IRQHandler(void)
   // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
   if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
   {
-    switch(H7I2C_I2C1->fsm_state)
+    switch(H7I2C_I2C1.fsm_state)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
       case H7I2C_FSM_STATE_WRITEONLY:
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C1->wr_todo > 255UL)
+        if (H7I2C_I2C1.wr_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C1->wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C1.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C1->rd_todo > 255UL)
+        if (H7I2C_I2C1.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C1->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C1->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
@@ -804,9 +806,9 @@ void I2C1_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C1->cr1_value, I2C_CR1_PE);
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(H7I2C_I2C1);
+    CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_PE);
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_IDLE;
+    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C1);
   }
 
   // Reminder: ADDR is cleared by writing ADDRCF = 1
@@ -820,7 +822,7 @@ void I2C1_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
   }
 
   MODIFY_REG(I2C1->CR1,
@@ -828,14 +830,14 @@ void I2C1_EV_IRQHandler(void)
     | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
     | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
     | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C1->cr1_value
+    H7I2C_I2C1.cr1_value
   );
 
   MODIFY_REG(I2C1->CR2,
       I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
     | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
     | I2C_CR2_PECBYTE,
-    H7I2C_I2C1->cr2_value
+    H7I2C_I2C1.cr2_value
   );
 
   I2C1->ICR = icr;
@@ -850,35 +852,35 @@ void I2C1_ER_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
   {
     icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
   }
 
   // ARLO is cleared by writing ARLOCF = 1
   if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
   {
     icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
   }
 
   // OVR is cleared by writing OVRCF = 1
   if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
   {
     icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
   }
 
   // PECERR is cleared by writing PECCF = 1
   if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
   {
     icr |= I2C_ICR_PECCF;
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
   }
 
   // TIMEOUT is cleared by writing TIMEOUTCF = 1
   if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
   {
     icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C1->fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
+    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
   }
 
   // ALERT is cleared by writing ALERTCF = 1
@@ -897,17 +899,17 @@ void I2C1_ER_IRQHandler(void)
 void I2C2_EV_IRQHandler(void)
 {
   uint32_t const isr = I2C2->ISR;
-  H7I2C_I2C2->cr1_value = I2C2->CR1;
-  H7I2C_I2C2->cr2_value = I2C2->CR2;
+  H7I2C_I2C2.cr1_value = I2C2->CR1;
+  H7I2C_I2C2.cr2_value = I2C2->CR2;
 
   // Reminder: RXNE is cleared by reading the I2C_RXDR register
   if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
   {
-    H7I2C_I2C2->rd_data[H7I2C_I2C2->rd_done] = I2C2->RXDR;
-    --(H7I2C_I2C2->rd_todo);
-    ++(H7I2C_I2C2->rd_done);
-    if (H7I2C_I2C2->rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_RXIE);
+    H7I2C_I2C2.rd_data[H7I2C_I2C2.rd_done] = I2C2->RXDR;
+    --(H7I2C_I2C2.rd_todo);
+    ++(H7I2C_I2C2.rd_done);
+    if (H7I2C_I2C2.rd_todo == 0U)
+      CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_RXIE);
   }
 
   // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
@@ -915,67 +917,67 @@ void I2C2_EV_IRQHandler(void)
   {
     if (READ_BIT(isr, I2C_ISR_TXE) != 0)
     {
-      I2C2->TXDR = H7I2C_I2C2->wr_data[H7I2C_I2C2->wr_done];
-      --(H7I2C_I2C2->wr_todo);
-      ++(H7I2C_I2C2->wr_done);
-      if (H7I2C_I2C2->wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_TXIE);
+      I2C2->TXDR = H7I2C_I2C2.wr_data[H7I2C_I2C2.wr_done];
+      --(H7I2C_I2C2.wr_todo);
+      ++(H7I2C_I2C2.wr_done);
+      if (H7I2C_I2C2.wr_todo == 0U)
+        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE);
     }
   }
 
   // Reminder: TC is cleared by writing START = 1 or STOP = 1
   if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
   {
-    uint32_t const fsm_state_copy = (H7I2C_I2C2->fsm_state);
+    uint32_t const fsm_state_copy = (H7I2C_I2C2.fsm_state);
     switch(fsm_state_copy)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C2->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C2->rd_todo > 255UL)
+        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C2.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_AUTOEND);
+        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
+        if (H7I2C_I2C2.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C2->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          SET_BIT   (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C2->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
         }
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C2->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C2.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
         // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C2->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
+        MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_START);
-        H7I2C_I2C2->rd_todo = H7I2C_I2C2->rd_data[0];
-        H7I2C_I2C2->rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C2->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_START);
+        H7I2C_I2C2.rd_todo = H7I2C_I2C2.rd_data[0];
+        H7I2C_I2C2.rd_done = 1U;
+        MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
         break;
 
       case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_STOP);
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C2->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_STOP);
         break;
 
       default:
@@ -986,34 +988,34 @@ void I2C2_EV_IRQHandler(void)
   // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
   if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
   {
-    switch(H7I2C_I2C2->fsm_state)
+    switch(H7I2C_I2C2.fsm_state)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
       case H7I2C_FSM_STATE_WRITEONLY:
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C2->wr_todo > 255UL)
+        if (H7I2C_I2C2.wr_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C2->wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C2.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C2->rd_todo > 255UL)
+        if (H7I2C_I2C2.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C2->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C2->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
@@ -1028,9 +1030,9 @@ void I2C2_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C2->cr1_value, I2C_CR1_PE);
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(H7I2C_I2C2);
+    CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_PE);
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_IDLE;
+    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C2);
   }
 
   // Reminder: ADDR is cleared by writing ADDRCF = 1
@@ -1044,7 +1046,7 @@ void I2C2_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
   }
 
   MODIFY_REG(I2C2->CR1,
@@ -1052,14 +1054,14 @@ void I2C2_EV_IRQHandler(void)
     | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
     | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
     | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C2->cr1_value
+    H7I2C_I2C2.cr1_value
   );
 
   MODIFY_REG(I2C2->CR2,
       I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
     | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
     | I2C_CR2_PECBYTE,
-    H7I2C_I2C2->cr2_value
+    H7I2C_I2C2.cr2_value
   );
 
   I2C2->ICR = icr;
@@ -1074,35 +1076,35 @@ void I2C2_ER_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
   {
     icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
   }
 
   // ARLO is cleared by writing ARLOCF = 1
   if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
   {
     icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
   }
 
   // OVR is cleared by writing OVRCF = 1
   if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
   {
     icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
   }
 
   // PECERR is cleared by writing PECCF = 1
   if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
   {
     icr |= I2C_ICR_PECCF;
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
   }
 
   // TIMEOUT is cleared by writing TIMEOUTCF = 1
   if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
   {
     icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C2->fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
+    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
   }
 
   // ALERT is cleared by writing ALERTCF = 1
@@ -1122,17 +1124,17 @@ void I2C2_ER_IRQHandler(void)
 void I2C3_EV_IRQHandler(void)
 {
   uint32_t const isr = I2C3->ISR;
-  H7I2C_I2C3->cr1_value = I2C3->CR1;
-  H7I2C_I2C3->cr2_value = I2C3->CR2;
+  H7I2C_I2C3.cr1_value = I2C3->CR1;
+  H7I2C_I2C3.cr2_value = I2C3->CR2;
 
   // Reminder: RXNE is cleared by reading the I2C_RXDR register
   if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
   {
-    H7I2C_I2C3->rd_data[H7I2C_I2C3->rd_done] = I2C3->RXDR;
-    --(H7I2C_I2C3->rd_todo);
-    ++(H7I2C_I2C3->rd_done);
-    if (H7I2C_I2C3->rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_RXIE);
+    H7I2C_I2C3.rd_data[H7I2C_I2C3.rd_done] = I2C3->RXDR;
+    --(H7I2C_I2C3.rd_todo);
+    ++(H7I2C_I2C3.rd_done);
+    if (H7I2C_I2C3.rd_todo == 0U)
+      CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_RXIE);
   }
 
   // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
@@ -1140,67 +1142,67 @@ void I2C3_EV_IRQHandler(void)
   {
     if (READ_BIT(isr, I2C_ISR_TXE) != 0)
     {
-      I2C3->TXDR = H7I2C_I2C3->wr_data[H7I2C_I2C3->wr_done];
-      --(H7I2C_I2C3->wr_todo);
-      ++(H7I2C_I2C3->wr_done);
-      if (H7I2C_I2C3->wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_TXIE);
+      I2C3->TXDR = H7I2C_I2C3.wr_data[H7I2C_I2C3.wr_done];
+      --(H7I2C_I2C3.wr_todo);
+      ++(H7I2C_I2C3.wr_done);
+      if (H7I2C_I2C3.wr_todo == 0U)
+        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE);
     }
   }
 
   // Reminder: TC is cleared by writing START = 1 or STOP = 1
   if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
   {
-    uint32_t const fsm_state_copy = (H7I2C_I2C3->fsm_state);
+    uint32_t const fsm_state_copy = (H7I2C_I2C3.fsm_state);
     switch(fsm_state_copy)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C3->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C3->rd_todo > 255UL)
+        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C3.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_AUTOEND);
+        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
+        if (H7I2C_I2C3.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C3->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          SET_BIT   (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C3->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
         }
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C3->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C3.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
         // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C3->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
+        MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_START);
-        H7I2C_I2C3->rd_todo = H7I2C_I2C3->rd_data[0];
-        H7I2C_I2C3->rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C3->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_START);
+        H7I2C_I2C3.rd_todo = H7I2C_I2C3.rd_data[0];
+        H7I2C_I2C3.rd_done = 1U;
+        MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
         break;
 
       case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_STOP);
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C3->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_STOP);
         break;
 
       default:
@@ -1211,34 +1213,34 @@ void I2C3_EV_IRQHandler(void)
   // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
   if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
   {
-    switch(H7I2C_I2C3->fsm_state)
+    switch(H7I2C_I2C3.fsm_state)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
       case H7I2C_FSM_STATE_WRITEONLY:
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C3->wr_todo > 255UL)
+        if (H7I2C_I2C3.wr_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C3->wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C3.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C3->rd_todo > 255UL)
+        if (H7I2C_I2C3.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C3->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C3->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
@@ -1253,9 +1255,9 @@ void I2C3_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C3->cr1_value, I2C_CR1_PE);
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(H7I2C_I2C3);
+    CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_PE);
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_IDLE;
+    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C3);
   }
 
   // Reminder: ADDR is cleared by writing ADDRCF = 1
@@ -1269,7 +1271,7 @@ void I2C3_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
   }
 
   MODIFY_REG(I2C3->CR1,
@@ -1277,14 +1279,14 @@ void I2C3_EV_IRQHandler(void)
     | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
     | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
     | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C3->cr1_value
+    H7I2C_I2C3.cr1_value
   );
 
   MODIFY_REG(I2C3->CR2,
       I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
     | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
     | I2C_CR2_PECBYTE,
-    H7I2C_I2C3->cr2_value
+    H7I2C_I2C3.cr2_value
   );
 
   I2C3->ICR = icr;
@@ -1299,35 +1301,35 @@ void I2C3_ER_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
   {
     icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
   }
 
   // ARLO is cleared by writing ARLOCF = 1
   if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
   {
     icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
   }
 
   // OVR is cleared by writing OVRCF = 1
   if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
   {
     icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
   }
 
   // PECERR is cleared by writing PECCF = 1
   if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
   {
     icr |= I2C_ICR_PECCF;
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
   }
 
   // TIMEOUT is cleared by writing TIMEOUTCF = 1
   if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
   {
     icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C3->fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
+    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
   }
 
   // ALERT is cleared by writing ALERTCF = 1
@@ -1346,17 +1348,17 @@ void I2C3_ER_IRQHandler(void)
 void I2C4_EV_IRQHandler(void)
 {
   uint32_t const isr = I2C4->ISR;
-  H7I2C_I2C4->cr1_value = I2C4->CR1;
-  H7I2C_I2C4->cr2_value = I2C4->CR2;
+  H7I2C_I2C4.cr1_value = I2C4->CR1;
+  H7I2C_I2C4.cr2_value = I2C4->CR2;
 
   // Reminder: RXNE is cleared by reading the I2C_RXDR register
   if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
   {
-    H7I2C_I2C4->rd_data[H7I2C_I2C4->rd_done] = I2C4->RXDR;
-    --(H7I2C_I2C4->rd_todo);
-    ++(H7I2C_I2C4->rd_done);
-    if (H7I2C_I2C4->rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_RXIE);
+    H7I2C_I2C4.rd_data[H7I2C_I2C4.rd_done] = I2C4->RXDR;
+    --(H7I2C_I2C4.rd_todo);
+    ++(H7I2C_I2C4.rd_done);
+    if (H7I2C_I2C4.rd_todo == 0U)
+      CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_RXIE);
   }
 
   // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
@@ -1364,67 +1366,67 @@ void I2C4_EV_IRQHandler(void)
   {
     if (READ_BIT(isr, I2C_ISR_TXE) != 0)
     {
-      I2C4->TXDR = H7I2C_I2C4->wr_data[H7I2C_I2C4->wr_done];
-      --(H7I2C_I2C4->wr_todo);
-      ++(H7I2C_I2C4->wr_done);
-      if (H7I2C_I2C4->wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_TXIE);
+      I2C4->TXDR = H7I2C_I2C4.wr_data[H7I2C_I2C4.wr_done];
+      --(H7I2C_I2C4.wr_todo);
+      ++(H7I2C_I2C4.wr_done);
+      if (H7I2C_I2C4.wr_todo == 0U)
+        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE);
     }
   }
 
   // Reminder: TC is cleared by writing START = 1 or STOP = 1
   if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
   {
-    uint32_t const fsm_state_copy = (H7I2C_I2C4->fsm_state);
+    uint32_t const fsm_state_copy = (H7I2C_I2C4.fsm_state);
     switch(fsm_state_copy)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C4->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C4->rd_todo > 255UL)
+        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C4.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_AUTOEND);
+        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
+        if (H7I2C_I2C4.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C4->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          SET_BIT   (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C4->cr2_value, I2C_CR2_RELOAD);
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
         }
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C4->cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (H7I2C_I2C4.cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
         // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C4->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
+        MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_START);
-        H7I2C_I2C4->rd_todo = H7I2C_I2C4->rd_data[0];
-        H7I2C_I2C4->rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C4->cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_START);
+        H7I2C_I2C4.rd_todo = H7I2C_I2C4.rd_data[0];
+        H7I2C_I2C4.rd_done = 1U;
+        MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
+        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
         break;
 
       case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_STOP);
         break;
 
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C4->cr2_value, I2C_CR2_STOP);
+        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_STOP);
         break;
 
       default:
@@ -1435,34 +1437,34 @@ void I2C4_EV_IRQHandler(void)
   // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
   if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
   {
-    switch(H7I2C_I2C4->fsm_state)
+    switch(H7I2C_I2C4.fsm_state)
     {
       case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
       case H7I2C_FSM_STATE_WRITEONLY:
       case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C4->wr_todo > 255UL)
+        if (H7I2C_I2C4.wr_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C4->wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C4.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
       case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
       case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C4->rd_todo > 255UL)
+        if (H7I2C_I2C4.rd_todo > 255UL)
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
             ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
         }
         else
         {
-          MODIFY_REG(H7I2C_I2C4->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C4->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
         }
         break;
 
@@ -1477,9 +1479,9 @@ void I2C4_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C4->cr1_value, I2C_CR1_PE);
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(H7I2C_I2C4);
+    CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_PE);
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_IDLE;
+    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C4);
   }
 
   // Reminder: ADDR is cleared by writing ADDRCF = 1
@@ -1493,7 +1495,7 @@ void I2C4_EV_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
   {
     SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
   }
 
   MODIFY_REG(I2C4->CR1,
@@ -1501,14 +1503,14 @@ void I2C4_EV_IRQHandler(void)
     | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
     | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
     | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C4->cr1_value
+    H7I2C_I2C4.cr1_value
   );
 
   MODIFY_REG(I2C4->CR2,
       I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
     | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
     | I2C_CR2_PECBYTE,
-    H7I2C_I2C4->cr2_value
+    H7I2C_I2C4.cr2_value
   );
 
   I2C4->ICR = icr;
@@ -1523,35 +1525,35 @@ void I2C4_ER_IRQHandler(void)
   if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
   {
     icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
   }
 
   // ARLO is cleared by writing ARLOCF = 1
   if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
   {
     icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
   }
 
   // OVR is cleared by writing OVRCF = 1
   if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
   {
     icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
   }
 
   // PECERR is cleared by writing PECCF = 1
   if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
   {
     icr |= I2C_ICR_PECCF;
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
   }
 
   // TIMEOUT is cleared by writing TIMEOUTCF = 1
   if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
   {
     icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C4->fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
+    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
   }
 
   // ALERT is cleared by writing ALERTCF = 1
@@ -1610,7 +1612,7 @@ static int h7i2c_i2c_pre_transaction_check(h7i2c_driver_instance_state_t* instan
 
   	if (instance->fsm_state == H7I2C_FSM_STATE_IDLE)
   	{
-  	  if (h7i2c_i2c_mutex_lock(timeout) != HAL_OK)
+  	  if (h7i2c_i2c_mutex_lock(instance, timeout) != HAL_OK)
   	  {
   	  	return H7I2C_RET_CODE_BUSY;
   	  }
@@ -1713,7 +1715,7 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
     ( (0UL << I2C_CR2_AUTOEND_Pos) & I2C_CR2_AUTOEND) | // AUTOEND = generate a stop bit after the last byte (when NBYTES = 0) is transferred
     ( (0UL << I2C_CR2_PECBYTE_Pos) & I2C_CR2_PECBYTE) ; // PECBYTE = send the PEC byte after the last data byte  (this is relevant for SMBUS)
 
-	MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, instance->slave_address << I2C_CR2_SADD_Pos   ));
+	MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, instance->slave_address << I2C_CR2_SADD_Pos   );
 
 
   switch (instance->fsm_state)
@@ -1722,14 +1724,14 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       SET_BIT(instance->cr1_value,  I2C_CR1_TXIE);
       CLEAR_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
 
-      if (h7i2c_i2c_wr_todo > 255UL)
+      if (instance->wr_todo > 255UL)
       {
         // We will need a reload
         MODIFY_REG(instance->cr2_value, I2C_CR2_RELOAD | I2C_CR2_NBYTES, I2C_CR2_RELOAD | (255UL << I2C_CR2_NBYTES_Pos) );
       }
       else
       {
-        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, h7i2c_i2c_wr_todo << I2C_CR2_NBYTES_Pos);
+        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, instance->wr_todo << I2C_CR2_NBYTES_Pos);
       }
       break;
 
@@ -1738,14 +1740,14 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       CLEAR_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
       //SET_BIT(instance->cr2_value, I2C_CR2_AUTOEND);
 
-      if (h7i2c_i2c_wr_todo > 255UL)
+      if (instance->wr_todo > 255UL)
       {
         // We will need a reload
         MODIFY_REG(instance->cr2_value, I2C_CR2_RELOAD | I2C_CR2_NBYTES, I2C_CR2_RELOAD | (255UL << I2C_CR2_NBYTES_Pos) );
       }
       else
       {
-        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, h7i2c_i2c_wr_todo << I2C_CR2_NBYTES_Pos);
+        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, instance->wr_todo << I2C_CR2_NBYTES_Pos);
       }
       break;
 
@@ -1754,14 +1756,14 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       SET_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
       //SET_BIT(instance->cr2_value, I2C_CR2_AUTOEND);
 
-      if (h7i2c_i2c_wr_todo > 255UL)
+      if (instance->wr_todo > 255UL)
       {
         // We will need a reload
         MODIFY_REG(instance->cr2_value, I2C_CR2_RELOAD | I2C_CR2_NBYTES, I2C_CR2_RELOAD | (255UL << I2C_CR2_NBYTES_Pos) );
       }
       else
       {
-        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, h7i2c_i2c_rd_todo << I2C_CR2_NBYTES_Pos);
+        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, instance->rd_todo << I2C_CR2_NBYTES_Pos);
       }
       break;
 
@@ -1784,7 +1786,7 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
 
 static int h7i2c_i2c_empty_write_transaction(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout)
 {
-	int const check_ret_val = h7i2c_i2c_pre_transaction_check(timeout);
+	int const check_ret_val = h7i2c_i2c_pre_transaction_check(instance, timeout);
 
   if (check_ret_val != H7I2C_RET_CODE_OK)
   	return check_ret_val;
@@ -1922,7 +1924,7 @@ static int h7i2c_i2c_empty_read_transaction(h7i2c_driver_instance_state_t* insta
 	MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, (instance->slave_address << I2C_CR2_SADD_Pos   ));
 
   
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
       MODIFY_REG(I2C1->CR1,
@@ -2240,7 +2242,7 @@ int h7i2c_smbus_write32(h7i2c_driver_instance_state_t* instance, uint16_t dev_ad
   wr_buf[2] = (word32[0] & 0x0000FF00UL) >>  8U;
   wr_buf[3] = (word32[0] & 0x00FF0000UL) >> 16U;
   wr_buf[4] = (word32[0] & 0xFF000000UL) >> 24U;
-  return h7i2c_i2c_write_read_transaction(dev_address, 5U, 0U, wr_buf, NULL, timeout);
+  return h7i2c_i2c_write_read_transaction(instance, dev_address, 5U, 0U, wr_buf, NULL, timeout);
 }
 
 int h7i2c_smbus_read32(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
@@ -2271,7 +2273,7 @@ int h7i2c_smbus_write64(h7i2c_driver_instance_state_t* instance, uint16_t dev_ad
   return h7i2c_i2c_write_read_transaction(instance, dev_address, 9U, 0U, wr_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_read64h7i2c_driver_instance_state_t* instance, (uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
+int h7i2c_smbus_read64(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
 {
   uint8_t rd_buf[8];
   uint32_t ret = h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 8U, &command, rd_buf, timeout);

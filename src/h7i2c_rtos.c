@@ -71,12 +71,12 @@ h7i2c_rtos_driver_instance_state_t H7I2C_RTOS_I2C1 =
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1
 {
   .bare_driver_instance = &H7I2C_I2C1,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #else
 {
   .bare_driver_instance = NULL,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #endif
 
@@ -85,12 +85,12 @@ h7i2c_rtos_driver_instance_state_t H7I2C_RTOS_I2C2 =
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
 {
   .bare_driver_instance = &H7I2C_I2C2,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #else
 {
   .bare_driver_instance = NULL,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #endif
 
@@ -99,12 +99,12 @@ h7i2c_rtos_driver_instance_state_t H7I2C_RTOS_I2C3 =
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
 {
   .bare_driver_instance = &H7I2C_I2C3,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #else
 {
   .bare_driver_instance = NULL,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #endif
 
@@ -113,36 +113,36 @@ h7i2c_rtos_driver_instance_state_t H7I2C_RTOS_I2C4 =
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
 {
   .bare_driver_instance = &H7I2C_I2C4,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #else
 {
   .bare_driver_instance = NULL,
-  .h7i2c_i2c_mutex_rtos = NULL
+  .mutex_rtos = NULL
 };
 #endif
 
 
 int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_t timeout)
 {
-  h7i2c_rtos_driver_instance_state_t instance_rtos = NULL;
+  h7i2c_rtos_driver_instance_state_t* instance_rtos = NULL;
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C1;
+      instance_rtos = &H7I2C_RTOS_I2C1;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C2;
+    case I2C2_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C2;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C3;
+    case I2C3_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C3;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C4;
+    case I2C4_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C4;
       break;
 
     default:
@@ -178,24 +178,24 @@ int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_t timeo
 
 void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance)
 {
-  h7i2c_rtos_driver_instance_state_t instance_rtos = NULL;
+  h7i2c_rtos_driver_instance_state_t* instance_rtos = NULL;
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C1;
+      instance_rtos = &H7I2C_RTOS_I2C1;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C2;
+    case I2C2_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C2;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C3;
+    case I2C3_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C3;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C4;
+    case I2C4_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C4;
       break;
 
     default:
@@ -209,24 +209,24 @@ void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance)
 
 void h7i2c_i2c_mutex_release_fromISR(h7i2c_driver_instance_state_t* instance)
 {
-  h7i2c_rtos_driver_instance_state_t instance_rtos = NULL;
+  h7i2c_rtos_driver_instance_state_t* instance_rtos = NULL;
 
-  switch (instance->i2c_base)
+  switch ((uint32_t) instance->i2c_base)
   {
     case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C1;
+      instance_rtos = &H7I2C_RTOS_I2C1;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C2;
+    case I2C2_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C2;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C3;
+    case I2C3_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C3;
       break;
 
-    case I2C1_BASE:
-      instance_rtos = H7I2C_RTOS_I2C4;
+    case I2C4_BASE:
+      instance_rtos = &H7I2C_RTOS_I2C4;
       break;
 
     default:
