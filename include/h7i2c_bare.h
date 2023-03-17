@@ -101,44 +101,45 @@ typedef struct h7i2c_driver_instance_state_t
   uint32_t timeout;
 } h7i2c_driver_instance_state_t;
 
+
 int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_t timeout);
 void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance);
 void h7i2c_i2c_mutex_release_fromISR(h7i2c_driver_instance_state_t* instance);
 int h7i2c_i2c_is_managed_by_this_driver(h7i2c_driver_instance_state_t* instance);
 
-void h7i2c_i2c_init();
-void h7i2c_deinit();
+void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance);
+void h7i2c_deinit(h7i2c_driver_instance_state_t* instance);
 
-int h7i2c_get_state();
-int h7i2c_clear_error_state();
+int h7i2c_get_state(h7i2c_driver_instance_state_t* instance);
+int h7i2c_clear_error_state(h7i2c_driver_instance_state_t* instance);
 
-int h7i2c_i2c_write(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
-int h7i2c_i2c_read(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
-int h7i2c_i2c_write_then_read(uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
+int h7i2c_i2c_write(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+int h7i2c_i2c_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+int h7i2c_i2c_write_then_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_quickcommand_write(uint16_t dev_address, uint32_t timeout);
-int h7i2c_smbus_quickcommand_read(uint16_t dev_address, uint32_t timeout);
+int h7i2c_smbus_quickcommand_write(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout);
+int h7i2c_smbus_quickcommand_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout);
 
-int h7i2c_smbus_sendbyte(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_receivebyte(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_sendbyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_receivebyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_writebyte(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_readbyte(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_writebyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_readbyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_writeword(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
-int h7i2c_smbus_readword(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_writeword(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_readword(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
 
-int h7i2c_smbus_processcall(uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
+int h7i2c_smbus_processcall(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
 
-int h7i2c_smbus_blockwrite(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
-int h7i2c_smbus_blockread(uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
+int h7i2c_smbus_blockwrite(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
+int h7i2c_smbus_blockread(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_blockwritereadprocesscall(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
+int h7i2c_smbus_blockwritereadprocesscall(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_write32(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
-int h7i2c_smbus_read32(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_write32(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_read32(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
 
-int h7i2c_smbus_write64(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-int h7i2c_smbus_read64(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+int h7i2c_smbus_write64(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+int h7i2c_smbus_read64(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
 
 #endif // INC_H7I2C_BARE_H_
