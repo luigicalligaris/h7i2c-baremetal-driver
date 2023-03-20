@@ -36,15 +36,14 @@
 
 #include "main.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-
 #include "h7i2c_config.h"
 
 
 #if H7I2C_USE_FREERTOS_IMPL == 1
 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 
 #include "h7i2c_rtos.h"
 #include "h7i2c_bare.h"
