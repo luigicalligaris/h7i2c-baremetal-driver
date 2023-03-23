@@ -34,28 +34,43 @@
 /*                                                                                           */
 /*********************************************************************************************/
 
-#ifndef INC_H7I2C_CONFIG_H_
-#define INC_H7I2C_CONFIG_H_
+#ifndef INC_H7I2C_BARE_PRIV_H_
+#define INC_H7I2C_BARE_PRIV_H_
+
+#include "h7i2c_config.h"
+#include "h7i2c_bare.h"
+
+enum {H7I2C_I2C_MUTEX_UNLOCKED = 0, H7I2C_I2C_MUTEX_LOCKED = 1};
 
 
-// Use these defines to put the peripheral under the responsibility of this driver.
-// You shall mind about collisions with the STM32Cube driver (if you use this driver,
-// the peripheral should be unconfigured in the IOC file).
-#define H7I2C_PERIPH_ENABLE_I2C1 0
-#define H7I2C_PERIPH_ENABLE_I2C2 0
-#define H7I2C_PERIPH_ENABLE_I2C3 0
-#define H7I2C_PERIPH_ENABLE_I2C4 1
+typedef struct h7i2c_driver_instance_state_t
+{
+  h7i2c_i2c_fsm_state_t fsm_state;
 
-// Do you want to use the FreeRTOS-compatible function implementations?
-#define H7I2C_USE_FREERTOS_IMPL 0
+  void*    i2c_base;
+
+  uint32_t slave_address;
+
+  uint32_t cr1_value;
+  uint32_t cr2_value;
+
+  uint32_t wr_todo;
+  uint32_t wr_done;
+  uint8_t* wr_data;
+
+  uint32_t rd_todo;
+  uint32_t rd_done;
+  uint8_t* rd_data;
+
+  uint32_t timestart;
+  uint32_t timeout;
+} h7i2c_driver_instance_state_t;
 
 
-// Do not edit this logic if you don't understand it
-#if H7I2C_PERIPH_ENABLE_I2C1 == 1 || H7I2C_PERIPH_ENABLE_I2C2 == 1 || H7I2C_PERIPH_ENABLE_I2C3 == 1 || H7I2C_PERIPH_ENABLE_I2C4 == 1
-#define H7I2C_PERIPH_ENABLE_ANY 1
-#else
-#define H7I2C_PERIPH_ENABLE_ANY 0
-#endif
+int h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout);
+void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral);
+void h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral);
+int h7i2c_i2c_is_managed_by_this_driver(h7i2c_periph_t peripheral);
 
 
-#endif // INC_H7I2C_CONFIG_H_
+#endif // INC_H7I2C_BARE_PRIV_H_

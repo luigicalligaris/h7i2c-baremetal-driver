@@ -40,170 +40,262 @@
 
 #include "stm32h7xx_hal_gpio.h"
 #include "stm32h7xx_hal_rcc.h"
-
 #include "stm32h745xx.h"
 
 #include "h7i2c_config.h"
 
 #include "h7i2c_bare.h"
+#include "h7i2c_bare_priv.h"
 
 
-#if 0
-h7i2c_i2c_fsm_state_t  h7i2c_i2c_fsm_state = H7I2C_FSM_STATE_UNINITIALIZED;
-uint32_t             h7i2c_i2c_slave_address;
-
-uint32_t             h7i2c_i2c_cr1_value;
-uint32_t             h7i2c_i2c_cr2_value;
-
-uint32_t             h7i2c_i2c_wr_todo;
-uint32_t             h7i2c_i2c_wr_done;
-uint8_t*             h7i2c_i2c_wr_data;
-
-uint32_t             h7i2c_i2c_rd_todo;
-uint32_t             h7i2c_i2c_rd_done;
-uint8_t*             h7i2c_i2c_rd_data;
-
-uint32_t             h7i2c_i2c_timestart;
-uint32_t             h7i2c_i2c_timeout;
-
-uint8_t h7i2c_i2c_mutex = H7I2C_I2C_MUTEX_UNLOCKED;
-#endif
-
-
-h7i2c_driver_instance_state_t H7I2C_I2C1 =
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1
+uint8_t h7i2c_mutex_i2c1 = H7I2C_I2C_MUTEX_UNLOCKED;
+
+h7i2c_driver_instance_state_t h7i2c_state_i2c1 =
 {
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = I2C1_BASE,
+  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED,
+  .i2c_base      = (void*) I2C1_BASE,
   .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
-};
-#else
-{
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = NULL,
-  .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
+  .cr1_value     = 0x00000000, .cr2_value = 0x00000000,
+  .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
+  .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
+  .timestart     = 0x00000000, .timeout   = 0x00000000
 };
 #endif
 
-
-h7i2c_driver_instance_state_t H7I2C_I2C2 =
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
+uint8_t h7i2c_mutex_i2c2 = H7I2C_I2C_MUTEX_UNLOCKED;
+
+h7i2c_driver_instance_state_t h7i2c_state_i2c2 =
 {
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = I2C2_BASE,
+  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED,
+  .i2c_base      = (void*) I2C2_BASE,
   .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
-};
-#else
-{
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = NULL,
-  .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
+  .cr1_value     = 0x00000000, .cr2_value = 0x00000000,
+  .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
+  .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
+  .timestart     = 0x00000000, .timeout   = 0x00000000
 };
 #endif
 
-
-h7i2c_driver_instance_state_t H7I2C_I2C3 =
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
+uint8_t h7i2c_mutex_i2c3 = H7I2C_I2C_MUTEX_UNLOCKED;
+
+h7i2c_driver_instance_state_t h7i2c_state_i2c3 =
 {
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = I2C3_BASE,
+  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED,
+  .i2c_base      = (void*) I2C3_BASE,
   .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
-};
-#else
-{
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = NULL,
-  .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
+  .cr1_value     = 0x00000000, .cr2_value = 0x00000000,
+  .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
+  .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
+  .timestart     = 0x00000000, .timeout   = 0x00000000
 };
 #endif
 
-
-h7i2c_driver_instance_state_t H7I2C_I2C4 =
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
+uint8_t h7i2c_mutex_i2c4 = H7I2C_I2C_MUTEX_UNLOCKED;
+
+h7i2c_driver_instance_state_t h7i2c_state_i2c4 =
 {
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = I2C4_BASE,
+  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED,
+  .i2c_base      = (void*) I2C4_BASE,
   .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
-};
-#else
-{
-  .fsm_state     = H7I2C_FSM_STATE_UNINITIALIZED, .mutex = H7I2C_I2C_MUTEX_UNLOCKED,
-  .i2c_base      = NULL,
-  .slave_address = 0x00000000,
-  .cr1_value     = 0x00000000, .cr2_value     = 0x00000000,
-  .wr_todo       = 0x00000000, .wr_done       = 0x00000000, .wr_data       = 0x00000000,
-  .rd_todo       = 0x00000000, .rd_done       = 0x00000000, .rd_data       = 0x00000000,
-  .timestart     = 0x00000000, .timeout       = 0x00000000
+  .cr1_value     = 0x00000000, .cr2_value = 0x00000000,
+  .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
+  .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
+  .timestart     = 0x00000000, .timeout   = 0x00000000
 };
 #endif
 
 
-__weak int h7i2c_i2c_mutex_lock(h7i2c_driver_instance_state_t* instance, uint32_t timeout)
+inline static h7i2c_driver_instance_state_t* h7i2c_get_driver_instance(h7i2c_periph_t peripheral)
+{
+  switch(peripheral)
+  {
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      return &h7i2c_state_i2c1;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      return &h7i2c_state_i2c2;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      return &h7i2c_state_i2c3;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      return &h7i2c_state_i2c4;
+#endif
+    default:
+      return NULL;
+  };
+}
+
+
+inline int h7i2c_is_peripheral_managed_by_this_driver(h7i2c_periph_t peripheral)
+{
+  switch(peripheral)
+  {
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      return 1;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      return 1;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      return 1;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      return 1;
+#endif
+    default:
+      return 0;
+  };
+}
+
+
+h7i2c_i2c_fsm_state_t h7i2c_get_state(h7i2c_periph_t peripheral)
+{
+  switch(peripheral)
+  {
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      return h7i2c_state_i2c1.fsm_state;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      return h7i2c_state_i2c2.fsm_state;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      return h7i2c_state_i2c3.fsm_state;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      return h7i2c_state_i2c4.fsm_state;
+#endif
+    default:
+      break;
+  };
+  return H7I2C_FSM_STATE_UNMANAGED_BY_DRIVER;
+}
+
+int h7i2c_is_ready(h7i2c_periph_t peripheral)
+{
+  switch(h7i2c_get_state(peripheral))
+  {
+    case H7I2C_FSM_STATE_UNINITIALIZED:
+    case H7I2C_FSM_STATE_IDLE:
+      return 1;
+    default:
+      break;
+  }
+  return 0;
+}
+
+h7i2c_i2c_fsm_state_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout)
 {
   uint32_t const timestart = HAL_GetTick();
 
-  if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(&(instance->mutex)))
+  while (HAL_GetTick() - timestart < timeout)
   {
-    if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, &(instance->mutex)))
-    {
-      __DMB();// Data Memory Barrier
+    if (h7i2c_is_ready(peripheral))
       return H7I2C_RET_CODE_OK;
-    }
-    else
-    {
-      return H7I2C_RET_CODE_BUSY;
-    }
   }
-  else
+  return H7I2C_RET_CODE_BUSY;
+}
+
+__weak int h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
+{
+  uint32_t const timestart = HAL_GetTick();
+  uint8_t* p_mutex = NULL;
+
+  switch(peripheral)
   {
-    while (HAL_GetTick() - timestart < timeout)
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      p_mutex = &h7i2c_mutex_i2c1;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      p_mutex = &h7i2c_mutex_i2c2;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      p_mutex = &h7i2c_mutex_i2c3;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      p_mutex = &h7i2c_mutex_i2c4;
+      break;
+#endif
+    default:
+      return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+  };
+
+  // This is a simple infinite loop. As this is bare metal code it's supposed not to be an issue, 
+  // but in general it is inefficient. The RTOS implementation solves this with a yield call.
+  while (HAL_GetTick() - timestart < timeout)
+  {
+    // Cortex-M exclusive monitor read: sets the exclusive monitor flag on address p_mutex
+    if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(p_mutex))
     {
-      if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(&(instance->mutex)))
+      // Cortex-M exclusive monitor write: only writes and returns 0 if exclusive 
+      // monitor flag is still set, otherwise return nonzero and write nothing
+      if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, p_mutex))
       {
-        if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, &(instance->mutex)))
-        {
-          __DMB(); // Data Memory Barrier
-          return H7I2C_RET_CODE_OK;
-        }
+        __DMB();// Data Memory Barrier
+        return H7I2C_RET_CODE_OK;
       }
     }
   }
   return H7I2C_RET_CODE_BUSY;
 }
 
-__weak void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance)
+
+__weak void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
 {
-  if (H7I2C_I2C_MUTEX_LOCKED == __LDREXB(&(instance->mutex)))
+  uint8_t* p_mutex = NULL;
+
+  switch(peripheral)
   {
-    if (0 == __STREXB(H7I2C_I2C_MUTEX_UNLOCKED, &(instance->mutex)))
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      p_mutex = &h7i2c_mutex_i2c1;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      p_mutex = &h7i2c_mutex_i2c2;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      p_mutex = &h7i2c_mutex_i2c3;
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      p_mutex = &h7i2c_mutex_i2c4;
+      break;
+#endif
+    default:
+      return;
+  };
+
+  if (H7I2C_I2C_MUTEX_LOCKED == __LDREXB(p_mutex))
+  {
+    if (0 == __STREXB(H7I2C_I2C_MUTEX_UNLOCKED, p_mutex))
     {
       __DMB();// Data Memory Barrier
       return;
@@ -211,22 +303,18 @@ __weak void h7i2c_i2c_mutex_release(h7i2c_driver_instance_state_t* instance)
   }
 }
 
-__weak void h7i2c_i2c_mutex_release_fromISR(h7i2c_driver_instance_state_t* instance)
+
+__weak void h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral)
 {
-  h7i2c_i2c_mutex_release(instance);
+  h7i2c_i2c_mutex_release(peripheral);
 }
 
-int h7i2c_i2c_is_managed_by_this_driver(h7i2c_driver_instance_state_t* instance)
-{
-  if (instance && instance->i2c_base)
-    return 1;
-  return 0;
-}
 
-static void h7i2c_i2c_reset_peripheral_full(h7i2c_driver_instance_state_t* instance)
+static void h7i2c_i2c_reset_peripheral_full(h7i2c_periph_t peripheral)
 {
-  // If we are not managing the peripheral, do nothing
-  if (!instance || !(instance->i2c_base))
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
     return;
 
   I2C_TypeDef* const i2cx = (I2C_TypeDef*) instance->i2c_base;
@@ -264,10 +352,12 @@ static void h7i2c_i2c_reset_peripheral_full(h7i2c_driver_instance_state_t* insta
     | I2C_ICR_ARLOCF  | I2C_ICR_OVRCF   | I2C_ICR_PECCF   | I2C_ICR_TIMOUTCF| I2C_ICR_ALERTCF);
 }
 
-static void h7i2c_i2c_reset_peripheral_soft(h7i2c_driver_instance_state_t* instance)
+
+static void h7i2c_i2c_reset_peripheral_soft(h7i2c_periph_t peripheral)
 {
-  // If we are not managing the peripheral, do nothing
-  if (!instance || !(instance->i2c_base))
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
     return;
 
   I2C_TypeDef* i2cx = (I2C_TypeDef*) instance->i2c_base;
@@ -277,54 +367,62 @@ static void h7i2c_i2c_reset_peripheral_soft(h7i2c_driver_instance_state_t* insta
   SET_BIT(i2cx->CR1, I2C_CR1_PE);
 }
 
-static void h7i2c_i2c_reset_driver(h7i2c_driver_instance_state_t* instance)
+
+static void h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral)
 {
-  // If we are not managing the peripheral, do nothing
-  if (!instance || !(instance->i2c_base))
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
     return;
 
   instance->fsm_state = H7I2C_FSM_STATE_IDLE;
-  h7i2c_i2c_mutex_release(instance);
+  h7i2c_i2c_mutex_release(peripheral);
 }
 
-void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
-{
-  // If we are not managing the peripheral, do nothing
-  if (!instance || !(instance->i2c_base))
-    return;
 
+h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
+{
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-  switch ((uint32_t) instance->i2c_base)
+  switch(peripheral)
   {
-    case I2C1_BASE:
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C1CLKSOURCE_D2PCLK1;
       break;
-    case I2C2_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C2CLKSOURCE_D2PCLK1;
       break;
-    case I2C3_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C3CLKSOURCE_D2PCLK1;
       break;
-    case I2C4_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C4;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C4CLKSOURCE_D3PCLK1;
       break;
+#endif
     default:
-      Error_Handler();
-  }
+      return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+  };
 
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
 
-  switch ((uint32_t) instance->i2c_base)
+  switch(peripheral)
   {
-    case I2C1_BASE:
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
       // When the M7 core pauses we want the I2C1 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C1, DBGMCU_APB1LFZ1_DBG_I2C1);
 
@@ -375,8 +473,9 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 
       break;
-
-    case I2C2_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
       // When the M7 core pauses we want the I2C2 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C2, DBGMCU_APB1LFZ1_DBG_I2C2);
 
@@ -427,8 +526,9 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
 
       break;
-
-    case I2C3_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
       // When the M7 core pauses we want the I2C3 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C3, DBGMCU_APB1LFZ1_DBG_I2C3);
 
@@ -490,8 +590,9 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
 
       break;
-
-    case I2C4_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
       // When the M7 core pauses we want the I2C4 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB4FZ1, DBGMCU_APB4FZ1_DBG_I2C4, DBGMCU_APB4FZ1_DBG_I2C4);
 
@@ -500,16 +601,16 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       // AFRH: Set alternate function I2C4 = 4 = 0b0100 (see datasheet tab 14) to pins PF14 and PF15
       MODIFY_REG(GPIOF->AFR[1], 0b1111 << 24 | 0b1111 << 28, 0b0100 << 24 | 0b0100 << 28);
 
-      // OSPEEDR: Set very high speed = 0b11 to pins 14 and 15
+      // OSPEEDR: Set very high speed = 0b11 to pins PF14 and PF15
       MODIFY_REG(GPIOF->OSPEEDR, 0b11 << 28 | 0b11 << 30, 0b11 << 28 | 0b11 << 30);
 
-      // PUPDR: Set pull-up = 0b01 to pins 14 and 15
+      // PUPDR: Set pull-up = 0b01 to pins PF14 and PF15
       MODIFY_REG(GPIOF->PUPDR, 0b11 << 28 | 0b11 << 30, 0b01 << 28 | 0b01 << 30);
 
-      // OTYPEDR: Set open drain = 0b1 to pins 14 and 15
+      // OTYPEDR: Set open drain = 0b1 to pins PF14 and PF15
       MODIFY_REG(GPIOF->OTYPER, 0b1 << 14 | 0b1 << 15, 0b1 << 14 | 0b1 << 15);
 
-      // MODER: Set alternate mode = 0b10 to pins 14 and 15
+      // MODER: Set alternate mode = 0b10 to pins PF14 and PF15
       MODIFY_REG(GPIOF->MODER, 0b11 << 28 | 0b11 << 30, 0b10 << 28 | 0b10 << 30);
 
       __HAL_RCC_I2C4_CLK_ENABLE();
@@ -542,26 +643,28 @@ void h7i2c_i2c_init(h7i2c_driver_instance_state_t* instance)
       HAL_NVIC_EnableIRQ(I2C4_ER_IRQn);
 
       break;
+#endif
     default:
-      Error_Handler();
-  }
+      return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+  };
 
-  h7i2c_i2c_mutex_release(instance);
+  return H7I2C_RET_CODE_OK;
 }
 
 
-void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
+void h7i2c_deinit(h7i2c_periph_t peripheral)
 {
-  // If we are not managing the peripheral, do nothing
-  if (!instance || !(instance->i2c_base))
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
     return;
 
-  h7i2c_i2c_reset_peripheral_full(instance);
+  h7i2c_i2c_reset_peripheral_full(peripheral);
 
-
-  switch ((uint32_t) instance->i2c_base)
+  switch(peripheral)
   {
-    case I2C1_BASE:
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
       // Disable the I2C1 interrupts in NVIC
       HAL_NVIC_DisableIRQ(I2C1_EV_IRQn);
       HAL_NVIC_DisableIRQ(I2C1_ER_IRQn);
@@ -578,8 +681,9 @@ void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
       HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
       HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
       break;
-
-    case I2C2_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
       // Disable the I2C2 interrupts in NVIC
       HAL_NVIC_DisableIRQ(I2C2_EV_IRQn);
       HAL_NVIC_DisableIRQ(I2C2_ER_IRQn);
@@ -596,8 +700,9 @@ void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
       HAL_GPIO_DeInit(GPIOF, GPIO_PIN_1);
       HAL_GPIO_DeInit(GPIOF, GPIO_PIN_0);
       break;
-
-    case I2C3_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
       // Disable the I2C3 interrupts in NVIC
       HAL_NVIC_DisableIRQ(I2C3_EV_IRQn);
       HAL_NVIC_DisableIRQ(I2C3_ER_IRQn);
@@ -614,8 +719,9 @@ void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
       HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
       HAL_GPIO_DeInit(GPIOC, GPIO_PIN_9);
       break;
-
-    case I2C4_BASE:
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
       // Disable the I2C4 interrupts in NVIC
       HAL_NVIC_DisableIRQ(I2C4_EV_IRQn);
       HAL_NVIC_DisableIRQ(I2C4_ER_IRQn);
@@ -632,1015 +738,403 @@ void h7i2c_deinit(h7i2c_driver_instance_state_t* instance)
       HAL_GPIO_DeInit(GPIOF, GPIO_PIN_14);
       HAL_GPIO_DeInit(GPIOF, GPIO_PIN_15);
       break;
-
+#endif
     default:
-      Error_Handler();
+      return;
+  };
+}
+
+
+h7i2c_i2c_ret_code_t h7i2c_clear_error_state(h7i2c_periph_t peripheral)
+{
+  uint32_t const timeout = 300;
+
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) == H7I2C_RET_CODE_OK)
+  {
+    switch (instance->fsm_state)
+      {
+        case H7I2C_FSM_STATE_ERROR_NACKF:
+        case H7I2C_FSM_STATE_ERROR_BERR:
+        case H7I2C_FSM_STATE_ERROR_ARLO:
+        case H7I2C_FSM_STATE_ERROR_OVR:
+        case H7I2C_FSM_STATE_ERROR_PECERR:
+        case H7I2C_FSM_STATE_ERROR_TIMEOUT:
+          instance->fsm_state = H7I2C_FSM_STATE_IDLE;
+          h7i2c_i2c_mutex_release(peripheral);
+          return H7I2C_RET_CODE_OK;
+        default:
+          h7i2c_i2c_mutex_release(peripheral);
+          return H7I2C_RET_CODE_CLEARED_A_NONERROR_STATE;
+      }
+  }
+  return H7I2C_RET_CODE_BUSY;
+}
+
+
+void H7I2C_EV_IRQHandler_Impl(h7i2c_periph_t peripheral)
+{
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+  I2C_TypeDef* hardware = (I2C_TypeDef *) instance->i2c_base;
+
+  uint32_t const isr = hardware->ISR;
+  instance->cr1_value = hardware->CR1;
+  instance->cr2_value = hardware->CR2;
+
+  uint32_t const fsm_state_copy = instance->fsm_state;
+
+  // Reminder: RXNE is cleared by reading the I2C_RXDR register
+  if (READ_BIT(isr, I2C_ISR_RXNE) != 0)
+  {
+    instance->rd_data[instance->rd_done] = hardware->RXDR;
+    --(instance->rd_todo);
+    ++(instance->rd_done);
+    if (instance->rd_todo == 0U)
+      CLEAR_BIT(instance->cr1_value, I2C_CR1_RXIE);
+  }
+
+  // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
+  if (READ_BIT(isr, I2C_ISR_TXIS) != 0)
+  {
+    if (READ_BIT(isr, I2C_ISR_TXE) != 0)
+    {
+      hardware->TXDR = instance->wr_data[instance->wr_done];
+      --(instance->wr_todo);
+      ++(instance->wr_done);
+      if (instance->wr_todo == 0U)
+        CLEAR_BIT(instance->cr1_value, I2C_CR1_TXIE);
+    }
+  }
+
+  // Reminder: TC is cleared by writing START = 1 or STOP = 1
+  if (READ_BIT(isr, I2C_ISR_TC) != 0)
+  {
+    switch(fsm_state_copy)
+    {
+      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
+        CLEAR_BIT(instance->cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (instance->cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (instance->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        SET_BIT  (instance->cr2_value, I2C_CR2_AUTOEND);
+        instance->fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
+        if (instance->rd_todo > 255UL)
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          SET_BIT   (instance->cr2_value, I2C_CR2_RELOAD);
+        }
+        else
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, (instance->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+          CLEAR_BIT (instance->cr2_value, I2C_CR2_RELOAD);
+        }
+        break;
+
+      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
+        CLEAR_BIT(instance->cr1_value, I2C_CR1_TXIE  );
+        SET_BIT  (instance->cr1_value, I2C_CR1_RXIE  );
+        SET_BIT  (instance->cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
+        // We just read one byte, which encodes the number of RX bytes which will follow
+        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (instance->cr2_value, I2C_CR2_RELOAD);
+        instance->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
+        break;
+
+      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
+        SET_BIT  (instance->cr2_value, I2C_CR2_START);
+        instance->rd_todo = instance->rd_data[0];
+        instance->rd_done = 1U;
+        MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES, (instance->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
+        CLEAR_BIT (instance->cr2_value, I2C_CR2_RELOAD);
+        instance->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
+        break;
+
+      case H7I2C_FSM_STATE_WRITEONLY:
+        CLEAR_BIT(instance->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (instance->cr2_value, I2C_CR2_STOP);
+        break;
+
+      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
+      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
+      case H7I2C_FSM_STATE_READONLY:
+        CLEAR_BIT(instance->cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
+        SET_BIT  (instance->cr2_value, I2C_CR2_STOP);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
+  if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
+  {
+    switch(fsm_state_copy)
+    {
+      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
+      case H7I2C_FSM_STATE_WRITEONLY:
+      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
+        if (instance->wr_todo > 255UL)
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
+        }
+        else
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (instance->wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+        }
+        break;
+
+      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
+      case H7I2C_FSM_STATE_READONLY:
+        if (instance->rd_todo > 255UL)
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
+        }
+        else
+        {
+          MODIFY_REG(instance->cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
+            ( (instance->rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  uint32_t icr = 0u;
+
+  // Reminder: STOPF cleared by writing STOPCF = 1
+  if (READ_BIT(isr, I2C_ISR_STOPF) != 0)
+  {
+    SET_BIT(icr, I2C_ICR_STOPCF);
+    CLEAR_BIT(instance->cr1_value, I2C_CR1_PE);
+  }
+
+  // Reminder: ADDR is cleared by writing ADDRCF = 1
+  if (READ_BIT(isr, I2C_ISR_ADDR) != 0)
+  {
+    // In principle we should not get here, as this is disabled
+    SET_BIT(icr, I2C_ICR_ADDRCF);
+  }
+
+  // Reminder: NACKF is cleared by writing NACKCF = 1
+  if (READ_BIT(isr, I2C_ISR_NACKF) != 0)
+  {
+    SET_BIT(icr, I2C_ICR_NACKCF);
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
+  }
+
+
+  // Commit to the hardware (CR1, CR2, ICR registers) the state changes
+  MODIFY_REG(hardware->CR1,
+      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
+    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
+    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
+    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
+    instance->cr1_value
+  );
+
+  MODIFY_REG(hardware->CR2,
+      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
+    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
+    | I2C_CR2_PECBYTE,
+    instance->cr2_value
+  );
+
+  hardware->ICR = icr;
+
+  if (READ_BIT(isr, I2C_ISR_STOPF) != 0)
+  {
+    instance->fsm_state = H7I2C_FSM_STATE_IDLE;
+    h7i2c_i2c_mutex_release_fromISR(peripheral);
   }
 }
 
-int h7i2c_get_state(h7i2c_driver_instance_state_t* instance)
+
+void H7I2C_ER_IRQHandler_Impl(h7i2c_periph_t peripheral)
 {
-	return instance->fsm_state;
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+  I2C_TypeDef* hardware = (I2C_TypeDef *) instance->i2c_base;
+
+  uint32_t const isr = hardware->ISR;
+  instance->cr1_value = hardware->CR1;
+  instance->cr2_value = hardware->CR2;
+
+  uint32_t icr       = 0u;
+
+  // BERR is cleared by writing BERRCF = 1
+  if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
+  {
+    icr |= I2C_ICR_BERRCF;
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // ARLO is cleared by writing ARLOCF = 1
+  if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
+  {
+    icr |= I2C_ICR_ARLOCF;
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // OVR is cleared by writing OVRCF = 1
+  if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
+  {
+    icr |= I2C_ICR_OVRCF;
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // PECERR is cleared by writing PECCF = 1
+  if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
+  {
+    icr |= I2C_ICR_PECCF;
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // TIMEOUT is cleared by writing TIMEOUTCF = 1
+  if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
+  {
+    icr |= I2C_ICR_TIMOUTCF;
+    instance->fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // ALERT is cleared by writing ALERTCF = 1
+  if ( READ_BIT(isr, I2C_ISR_ALERT) != 0 )
+  {
+    icr |= I2C_ICR_ALERTCF;
+    SET_BIT(instance->cr2_value, I2C_CR2_STOP);
+  }
+
+  // Commit to the hardware (CR1, CR2, ICR registers) the state changes
+  MODIFY_REG(hardware->CR1,
+      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
+    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
+    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
+    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
+    instance->cr1_value
+  );
+
+  MODIFY_REG(hardware->CR2,
+      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
+    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
+    | I2C_CR2_PECBYTE,
+    instance->cr2_value
+  );
+
+  hardware->ICR = icr;
+
+  if (READ_BIT(instance->cr2_value, I2C_CR2_STOP) != 0)
+    h7i2c_i2c_mutex_release_fromISR(peripheral);
 }
-
-int h7i2c_clear_error_state(h7i2c_driver_instance_state_t* instance)
-{
-	uint32_t const timeout = 300;
-	if (h7i2c_i2c_mutex_lock(instance, timeout) == H7I2C_RET_CODE_OK)
-	{
-		switch (instance->fsm_state)
-			{
-	  		case H7I2C_FSM_STATE_ERROR_NACKF:
-	  		case H7I2C_FSM_STATE_ERROR_BERR:
-	  		case H7I2C_FSM_STATE_ERROR_ARLO:
-	  		case H7I2C_FSM_STATE_ERROR_OVR:
-	  		case H7I2C_FSM_STATE_ERROR_PECERR:
-	  		case H7I2C_FSM_STATE_ERROR_TIMEOUT:
-	  			instance->fsm_state = H7I2C_FSM_STATE_IDLE;
-	  			h7i2c_i2c_mutex_release(instance);
-	  			return H7I2C_RET_CODE_OK;
-	  		default:
-	  			h7i2c_i2c_mutex_release(instance);
-	  			break;
-			}
-	}
-	return H7I2C_RET_CODE_ERROR;
-}
-
-
 
 
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1
-
 void I2C1_EV_IRQHandler(void)
 {
-  uint32_t const isr = I2C1->ISR;
-  H7I2C_I2C1.cr1_value = I2C1->CR1;
-  H7I2C_I2C1.cr2_value = I2C1->CR2;
-
-  // Reminder: RXNE is cleared by reading the I2C_RXDR register
-  if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
-  {
-    H7I2C_I2C1.rd_data[H7I2C_I2C1.rd_done] = I2C1->RXDR;
-    --(H7I2C_I2C1.rd_todo);
-    ++(H7I2C_I2C1.rd_done);
-    if (H7I2C_I2C1.rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_RXIE);
-  }
-
-  // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
-  if (READ_BIT(isr, I2C_ISR_TXIS) != 0)
-  {
-    if (READ_BIT(isr, I2C_ISR_TXE) != 0)
-    {
-      I2C1->TXDR = H7I2C_I2C1.wr_data[H7I2C_I2C1.wr_done];
-      --(H7I2C_I2C1.wr_todo);
-      ++(H7I2C_I2C1.wr_done);
-      if (H7I2C_I2C1.wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE);
-    }
-  }
-
-  // Reminder: TC is cleared by writing START = 1 or STOP = 1
-  if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
-  {
-    uint32_t const fsm_state_copy = (H7I2C_I2C1.fsm_state);
-    switch(fsm_state_copy)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C1.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C1.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C1.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_START);
-        H7I2C_I2C1.rd_todo = H7I2C_I2C1.rd_data[0];
-        H7I2C_I2C1.rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C1.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
-        break;
-
-      case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_STOP);
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C1.cr2_value, I2C_CR2_STOP);
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
-  if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
-  {
-    switch(H7I2C_I2C1.fsm_state)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-      case H7I2C_FSM_STATE_WRITEONLY:
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C1.wr_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C1.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C1.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C1.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C1.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  uint32_t icr = 0u;
-
-  // Reminder: STOPF cleared by writing STOPCF = 1
-  if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C1.cr1_value, I2C_CR1_PE);
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C1);
-  }
-
-  // Reminder: ADDR is cleared by writing ADDRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ADDR) != 0 )
-  {
-    // In principle we should not get here, as this is disabled
-    SET_BIT(icr, I2C_ICR_ADDRCF);
-  }
-
-  // Reminder: NACKF is cleared by writing NACKCF = 1
-  if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
-  }
-
-  MODIFY_REG(I2C1->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C1.cr1_value
-  );
-
-  MODIFY_REG(I2C1->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    H7I2C_I2C1.cr2_value
-  );
-
-  I2C1->ICR = icr;
+  H7I2C_EV_IRQHandler_Impl(H7I2C_I2C1);
 }
-
 void I2C1_ER_IRQHandler(void)
 {
-  uint32_t const isr = I2C1->ISR;
-  uint32_t icr       = 0u;
-
-  // BERR is cleared by writing BERRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
-  {
-    icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
-  }
-
-  // ARLO is cleared by writing ARLOCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
-  {
-    icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
-  }
-
-  // OVR is cleared by writing OVRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
-  {
-    icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
-  }
-
-  // PECERR is cleared by writing PECCF = 1
-  if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
-  {
-    icr |= I2C_ICR_PECCF;
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
-  }
-
-  // TIMEOUT is cleared by writing TIMEOUTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
-  {
-    icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C1.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
-  }
-
-  // ALERT is cleared by writing ALERTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ALERT) != 0 )
-  {
-    icr |= I2C_ICR_ALERTCF;
-  }
-
-  I2C1->ICR = icr;
+  H7I2C_ER_IRQHandler_Impl(H7I2C_I2C1);
 }
-
 #endif
 
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
-
 void I2C2_EV_IRQHandler(void)
 {
-  uint32_t const isr = I2C2->ISR;
-  H7I2C_I2C2.cr1_value = I2C2->CR1;
-  H7I2C_I2C2.cr2_value = I2C2->CR2;
-
-  // Reminder: RXNE is cleared by reading the I2C_RXDR register
-  if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
-  {
-    H7I2C_I2C2.rd_data[H7I2C_I2C2.rd_done] = I2C2->RXDR;
-    --(H7I2C_I2C2.rd_todo);
-    ++(H7I2C_I2C2.rd_done);
-    if (H7I2C_I2C2.rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_RXIE);
-  }
-
-  // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
-  if (READ_BIT(isr, I2C_ISR_TXIS) != 0)
-  {
-    if (READ_BIT(isr, I2C_ISR_TXE) != 0)
-    {
-      I2C2->TXDR = H7I2C_I2C2.wr_data[H7I2C_I2C2.wr_done];
-      --(H7I2C_I2C2.wr_todo);
-      ++(H7I2C_I2C2.wr_done);
-      if (H7I2C_I2C2.wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE);
-    }
-  }
-
-  // Reminder: TC is cleared by writing START = 1 or STOP = 1
-  if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
-  {
-    uint32_t const fsm_state_copy = (H7I2C_I2C2.fsm_state);
-    switch(fsm_state_copy)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C2.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C2.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C2.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_START);
-        H7I2C_I2C2.rd_todo = H7I2C_I2C2.rd_data[0];
-        H7I2C_I2C2.rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C2.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
-        break;
-
-      case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_STOP);
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C2.cr2_value, I2C_CR2_STOP);
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
-  if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
-  {
-    switch(H7I2C_I2C2.fsm_state)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-      case H7I2C_FSM_STATE_WRITEONLY:
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C2.wr_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C2.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C2.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C2.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C2.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  uint32_t icr = 0u;
-
-  // Reminder: STOPF cleared by writing STOPCF = 1
-  if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C2.cr1_value, I2C_CR1_PE);
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C2);
-  }
-
-  // Reminder: ADDR is cleared by writing ADDRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ADDR) != 0 )
-  {
-    // In principle we should not get here, as this is disabled
-    SET_BIT(icr, I2C_ICR_ADDRCF);
-  }
-
-  // Reminder: NACKF is cleared by writing NACKCF = 1
-  if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
-  }
-
-  MODIFY_REG(I2C2->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C2.cr1_value
-  );
-
-  MODIFY_REG(I2C2->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    H7I2C_I2C2.cr2_value
-  );
-
-  I2C2->ICR = icr;
+  H7I2C_EV_IRQHandler_Impl(H7I2C_I2C2);
 }
-
 void I2C2_ER_IRQHandler(void)
 {
-  uint32_t const isr = I2C2->ISR;
-  uint32_t icr       = 0u;
-
-  // BERR is cleared by writing BERRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
-  {
-    icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
-  }
-
-  // ARLO is cleared by writing ARLOCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
-  {
-    icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
-  }
-
-  // OVR is cleared by writing OVRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
-  {
-    icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
-  }
-
-  // PECERR is cleared by writing PECCF = 1
-  if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
-  {
-    icr |= I2C_ICR_PECCF;
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
-  }
-
-  // TIMEOUT is cleared by writing TIMEOUTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
-  {
-    icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C2.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
-  }
-
-  // ALERT is cleared by writing ALERTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ALERT) != 0 )
-  {
-    icr |= I2C_ICR_ALERTCF;
-  }
-
-  I2C2->ICR = icr;
+  H7I2C_ER_IRQHandler_Impl(H7I2C_I2C2);
 }
-
 #endif
 
-
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
-
 void I2C3_EV_IRQHandler(void)
 {
-  uint32_t const isr = I2C3->ISR;
-  H7I2C_I2C3.cr1_value = I2C3->CR1;
-  H7I2C_I2C3.cr2_value = I2C3->CR2;
-
-  // Reminder: RXNE is cleared by reading the I2C_RXDR register
-  if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
-  {
-    H7I2C_I2C3.rd_data[H7I2C_I2C3.rd_done] = I2C3->RXDR;
-    --(H7I2C_I2C3.rd_todo);
-    ++(H7I2C_I2C3.rd_done);
-    if (H7I2C_I2C3.rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_RXIE);
-  }
-
-  // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
-  if (READ_BIT(isr, I2C_ISR_TXIS) != 0)
-  {
-    if (READ_BIT(isr, I2C_ISR_TXE) != 0)
-    {
-      I2C3->TXDR = H7I2C_I2C3.wr_data[H7I2C_I2C3.wr_done];
-      --(H7I2C_I2C3.wr_todo);
-      ++(H7I2C_I2C3.wr_done);
-      if (H7I2C_I2C3.wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE);
-    }
-  }
-
-  // Reminder: TC is cleared by writing START = 1 or STOP = 1
-  if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
-  {
-    uint32_t const fsm_state_copy = (H7I2C_I2C3.fsm_state);
-    switch(fsm_state_copy)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C3.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C3.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C3.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_START);
-        H7I2C_I2C3.rd_todo = H7I2C_I2C3.rd_data[0];
-        H7I2C_I2C3.rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C3.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
-        break;
-
-      case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_STOP);
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C3.cr2_value, I2C_CR2_STOP);
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
-  if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
-  {
-    switch(H7I2C_I2C3.fsm_state)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-      case H7I2C_FSM_STATE_WRITEONLY:
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C3.wr_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C3.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C3.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C3.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C3.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  uint32_t icr = 0u;
-
-  // Reminder: STOPF cleared by writing STOPCF = 1
-  if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C3.cr1_value, I2C_CR1_PE);
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C3);
-  }
-
-  // Reminder: ADDR is cleared by writing ADDRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ADDR) != 0 )
-  {
-    // In principle we should not get here, as this is disabled
-    SET_BIT(icr, I2C_ICR_ADDRCF);
-  }
-
-  // Reminder: NACKF is cleared by writing NACKCF = 1
-  if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
-  }
-
-  MODIFY_REG(I2C3->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C3.cr1_value
-  );
-
-  MODIFY_REG(I2C3->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    H7I2C_I2C3.cr2_value
-  );
-
-  I2C3->ICR = icr;
+  H7I2C_EV_IRQHandler_Impl(H7I2C_I2C3);
 }
-
 void I2C3_ER_IRQHandler(void)
 {
-  uint32_t const isr = I2C3->ISR;
-  uint32_t icr       = 0u;
-
-  // BERR is cleared by writing BERRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
-  {
-    icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
-  }
-
-  // ARLO is cleared by writing ARLOCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
-  {
-    icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
-  }
-
-  // OVR is cleared by writing OVRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
-  {
-    icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
-  }
-
-  // PECERR is cleared by writing PECCF = 1
-  if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
-  {
-    icr |= I2C_ICR_PECCF;
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
-  }
-
-  // TIMEOUT is cleared by writing TIMEOUTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
-  {
-    icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C3.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
-  }
-
-  // ALERT is cleared by writing ALERTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ALERT) != 0 )
-  {
-    icr |= I2C_ICR_ALERTCF;
-  }
-
-  I2C3->ICR = icr;
+  H7I2C_ER_IRQHandler_Impl(H7I2C_I2C3);
 }
-
 #endif
 
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
-
 void I2C4_EV_IRQHandler(void)
 {
-  uint32_t const isr = I2C4->ISR;
-  H7I2C_I2C4.cr1_value = I2C4->CR1;
-  H7I2C_I2C4.cr2_value = I2C4->CR2;
-
-  // Reminder: RXNE is cleared by reading the I2C_RXDR register
-  if ( READ_BIT(isr, I2C_ISR_RXNE) != 0 )
-  {
-    H7I2C_I2C4.rd_data[H7I2C_I2C4.rd_done] = I2C4->RXDR;
-    --(H7I2C_I2C4.rd_todo);
-    ++(H7I2C_I2C4.rd_done);
-    if (H7I2C_I2C4.rd_todo == 0U)
-      CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_RXIE);
-  }
-
-  // Reminder: TXIS/TXE is cleared by writing the I2C_TXDR register
-  if (READ_BIT(isr, I2C_ISR_TXIS) != 0)
-  {
-    if (READ_BIT(isr, I2C_ISR_TXE) != 0)
-    {
-      I2C4->TXDR = H7I2C_I2C4.wr_data[H7I2C_I2C4.wr_done];
-      --(H7I2C_I2C4.wr_todo);
-      ++(H7I2C_I2C4.wr_done);
-      if (H7I2C_I2C4.wr_todo == 0U)
-        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE);
-    }
-  }
-
-  // Reminder: TC is cleared by writing START = 1 or STOP = 1
-  if ( READ_BIT(isr, I2C_ISR_TC) != 0 )
-  {
-    uint32_t const fsm_state_copy = (H7I2C_I2C4.fsm_state);
-    switch(fsm_state_copy)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C4.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_AUTOEND);
-        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_WRITEREAD_READSTEP;
-        if (H7I2C_I2C4.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          SET_BIT   (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-          CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE  );
-        SET_BIT  (H7I2C_I2C4.cr1_value, I2C_CR1_RXIE  );
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_RD_WRN | I2C_CR2_START);
-        // We just read one byte, which encodes the number of RX bytes which will follow
-        MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (1U << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES:
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_START);
-        H7I2C_I2C4.rd_todo = H7I2C_I2C4.rd_data[0];
-        H7I2C_I2C4.rd_done = 1U;
-        MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES, (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES);
-        CLEAR_BIT (H7I2C_I2C4.cr2_value, I2C_CR2_RELOAD);
-        H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA;
-        break;
-
-      case H7I2C_FSM_STATE_WRITEONLY:
-        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_STOP);
-        break;
-
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXDATA:
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_TXIE | I2C_CR1_RXIE | I2C_CR1_TCIE);
-        SET_BIT  (H7I2C_I2C4.cr2_value, I2C_CR2_STOP);
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  // Reminder: TCR cleared by writing I2C_CR2 with NBYTES[7:0] != 0
-  if ( READ_BIT(isr, I2C_ISR_TCR) != 0 )
-  {
-    switch(H7I2C_I2C4.fsm_state)
-    {
-      case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-      case H7I2C_FSM_STATE_WRITEONLY:
-      case H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_WRITESTEP:
-        if (H7I2C_I2C4.wr_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C4.wr_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      case H7I2C_FSM_STATE_WRITEREAD_READSTEP:
-      case H7I2C_FSM_STATE_READONLY:
-        if (H7I2C_I2C4.rd_todo > 255UL)
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (255UL << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | I2C_CR2_RELOAD);
-        }
-        else
-        {
-          MODIFY_REG(H7I2C_I2C4.cr2_value, I2C_CR2_NBYTES | I2C_CR2_RELOAD,
-            ( (H7I2C_I2C4.rd_todo << I2C_CR2_NBYTES_Pos) & I2C_CR2_NBYTES) | 0U);
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  uint32_t icr = 0u;
-
-  // Reminder: STOPF cleared by writing STOPCF = 1
-  if ( READ_BIT(isr, I2C_ISR_STOPF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_STOPCF);
-    CLEAR_BIT(H7I2C_I2C4.cr1_value, I2C_CR1_PE);
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_IDLE;
-    h7i2c_i2c_mutex_release_fromISR(&H7I2C_I2C4);
-  }
-
-  // Reminder: ADDR is cleared by writing ADDRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ADDR) != 0 )
-  {
-    // In principle we should not get here, as this is disabled
-    SET_BIT(icr, I2C_ICR_ADDRCF);
-  }
-
-  // Reminder: NACKF is cleared by writing NACKCF = 1
-  if ( READ_BIT(isr, I2C_ISR_NACKF) != 0 )
-  {
-    SET_BIT(icr, I2C_ICR_NACKCF);
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_NACKF;
-  }
-
-  MODIFY_REG(I2C4->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    H7I2C_I2C4.cr1_value
-  );
-
-  MODIFY_REG(I2C4->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    H7I2C_I2C4.cr2_value
-  );
-
-  I2C4->ICR = icr;
+  H7I2C_EV_IRQHandler_Impl(H7I2C_I2C4);
 }
-
 void I2C4_ER_IRQHandler(void)
 {
-  uint32_t const isr = I2C4->ISR;
-  uint32_t icr       = 0u;
-
-  // BERR is cleared by writing BERRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_BERR) != 0 )
-  {
-    icr |= I2C_ICR_BERRCF;
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_BERR;
-  }
-
-  // ARLO is cleared by writing ARLOCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ARLO) != 0 )
-  {
-    icr |= I2C_ICR_ARLOCF;
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_ARLO;
-  }
-
-  // OVR is cleared by writing OVRCF = 1
-  if ( READ_BIT(isr, I2C_ISR_OVR) != 0 )
-  {
-    icr |= I2C_ICR_OVRCF;
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_OVR;
-  }
-
-  // PECERR is cleared by writing PECCF = 1
-  if ( READ_BIT(isr, I2C_ISR_PECERR) != 0 )
-  {
-    icr |= I2C_ICR_PECCF;
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_PECERR;
-  }
-
-  // TIMEOUT is cleared by writing TIMEOUTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_TIMEOUT) != 0 )
-  {
-    icr |= I2C_ICR_TIMOUTCF;
-    H7I2C_I2C4.fsm_state = H7I2C_FSM_STATE_ERROR_TIMEOUT;
-  }
-
-  // ALERT is cleared by writing ALERTCF = 1
-  if ( READ_BIT(isr, I2C_ISR_ALERT) != 0 )
-  {
-    icr |= I2C_ICR_ALERTCF;
-  }
-
-  I2C4->ICR = icr;
+  H7I2C_ER_IRQHandler_Impl(H7I2C_I2C4);
 }
-
 #endif
 
 
-
-
-static int h7i2c_i2c_pre_transaction_check(h7i2c_driver_instance_state_t* instance, uint32_t timeout)
+static int h7i2c_i2c_pre_transaction_check(h7i2c_periph_t peripheral, uint32_t timeout)
 {
-	uint32_t const timestart = HAL_GetTick();
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
 
-	// Do not run if the driver is in error state
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  // Do not run if the driver is in error state
   switch (instance->fsm_state)
   {
-  	case H7I2C_FSM_STATE_ERROR_NACKF:
-  	case H7I2C_FSM_STATE_ERROR_BERR:
-  	case H7I2C_FSM_STATE_ERROR_ARLO:
-  	case H7I2C_FSM_STATE_ERROR_OVR:
-  	case H7I2C_FSM_STATE_ERROR_PECERR:
-  	case H7I2C_FSM_STATE_ERROR_TIMEOUT:
-  		return H7I2C_RET_CODE_PERIPH_IN_ERR_STATE;
-  	default:
-  		break;
+    case H7I2C_FSM_STATE_ERROR_NACKF:
+    case H7I2C_FSM_STATE_ERROR_BERR:
+    case H7I2C_FSM_STATE_ERROR_ARLO:
+    case H7I2C_FSM_STATE_ERROR_OVR:
+    case H7I2C_FSM_STATE_ERROR_PECERR:
+    case H7I2C_FSM_STATE_ERROR_TIMEOUT:
+      return H7I2C_RET_CODE_PERIPH_IN_ERR_STATE;
+    default:
+      break;
   }
 
   // Lazy initialization. This branch usually should happen just once
   if (instance->fsm_state == H7I2C_FSM_STATE_UNINITIALIZED)
-  {
- 	  if (h7i2c_i2c_mutex_lock(instance, timeout) != HAL_OK)
-    {
-  	  return H7I2C_RET_CODE_BUSY;
-  	}
- 	  {
- 	  	h7i2c_i2c_init(instance);
- 	  	instance->fsm_state = H7I2C_FSM_STATE_IDLE;
- 	  	h7i2c_i2c_mutex_release(instance);
- 	  }
-  }
+ 	 	h7i2c_i2c_init(peripheral);
 
-  // Wait until timeout or until driver becomes ready
-  while (1)
-  {
-  	if (HAL_GetTick() - timestart >= timeout)
-  	{
-  		return H7I2C_RET_CODE_BUSY;
-  	}
-
-  	if (instance->fsm_state == H7I2C_FSM_STATE_IDLE)
-  	{
-  	  if (h7i2c_i2c_mutex_lock(instance, timeout) != HAL_OK)
-  	  {
-  	  	return H7I2C_RET_CODE_BUSY;
-  	  }
-  	  else
-  	  {
-  	  	// If the state changed while we were taking the mutex, keep trying
-  	  	if (instance->fsm_state != H7I2C_FSM_STATE_IDLE)
-  	  	{
-  	  		h7i2c_i2c_mutex_release(instance);
-  	  		continue;
-  	  	}
-
-  	  	instance->fsm_state = H7I2C_FSM_STATE_SETUP_TRANSFER;
-  	  	h7i2c_i2c_mutex_release(instance);
-  	  	break;
-  	  }
-  	}
-  }
+  instance->fsm_state = H7I2C_FSM_STATE_SETUP_TRANSFER;
 
   return H7I2C_RET_CODE_OK;
 }
 
-static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t* wr_buf, uint8_t* rd_buf, uint32_t timeout)
+
+static int h7i2c_i2c_write_read_transaction(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t* wr_buf, uint8_t* rd_buf, uint32_t timeout)
 {
-	int const check_ret_val = h7i2c_i2c_pre_transaction_check(instance, timeout);
+  if ( (wr_size == 0UL || wr_buf == NULL) && (rd_size == 0UL || rd_buf == NULL) )
+    return H7I2C_RET_CODE_INVALID_ARGS;
+
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+    return H7I2C_RET_CODE_BUSY;
+
+  int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
 
   if (check_ret_val != H7I2C_RET_CODE_OK)
-  	return check_ret_val;
+  {
+    h7i2c_i2c_mutex_release(peripheral);
+    return check_ret_val;
+  }
 
   instance->timestart      = HAL_GetTick();
   instance->timeout        = timeout;
@@ -1655,8 +1149,8 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
   instance->rd_data        = rd_buf;
 
 	if (instance->wr_todo > 0UL && instance->wr_data != NULL)
+  // We will do a write first
   {
-  	// We will do a write first
     if (instance->rd_todo > 0UL && instance->rd_data != NULL)
   		// We will do a write, then a read
     	instance->fsm_state = H7I2C_FSM_STATE_WRITEREAD_WRITESTEP;
@@ -1665,17 +1159,9 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
     	instance->fsm_state = H7I2C_FSM_STATE_WRITEONLY;
   }
   else
+  // We will not do a write and only do a read (both null were checked at the beginning)
   {
-    // We will not do a write
-    if (instance->rd_todo > 0UL && instance->rd_data != NULL)
-    	// We will only do a read
-     	instance->fsm_state = H7I2C_FSM_STATE_READONLY;
-    else
-    {
-     	// We will do nothing
-     	instance->fsm_state = H7I2C_FSM_STATE_IDLE;
-     	return H7I2C_RET_CODE_INVALID_ARGS;
-    }
+    instance->fsm_state = H7I2C_FSM_STATE_READONLY;
   }
 
   // Default value for CR1
@@ -1721,7 +1207,7 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
   switch (instance->fsm_state)
   {
     case H7I2C_FSM_STATE_WRITEREAD_WRITESTEP:
-      SET_BIT(instance->cr1_value,  I2C_CR1_TXIE);
+      SET_BIT(instance->cr1_value, I2C_CR1_TXIE);
       CLEAR_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
 
       if (instance->wr_todo > 255UL)
@@ -1736,7 +1222,7 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       break;
 
     case H7I2C_FSM_STATE_WRITEONLY:
-      SET_BIT(instance->cr1_value, I2C_CR1_TXIE   );
+      SET_BIT(instance->cr1_value, I2C_CR1_TXIE);
       CLEAR_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
       //SET_BIT(instance->cr2_value, I2C_CR2_AUTOEND);
 
@@ -1752,8 +1238,8 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       break;
 
     case H7I2C_FSM_STATE_READONLY:
-      SET_BIT(instance->cr1_value, I2C_CR1_RXIE   );
-      SET_BIT(instance->cr2_value, I2C_CR2_RD_WRN );
+      SET_BIT(instance->cr1_value, I2C_CR1_RXIE);
+      SET_BIT(instance->cr2_value, I2C_CR2_RD_WRN);
       //SET_BIT(instance->cr2_value, I2C_CR2_AUTOEND);
 
       if (instance->wr_todo > 255UL)
@@ -1774,22 +1260,37 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_driver_instance_state_t* insta
       break;
   }
 
-  I2C4->CR1 = instance->cr1_value;
-  READ_REG(I2C4->CR1);
-  I2C4->CR2 = instance->cr2_value;
-  READ_REG(I2C4->CR2);
+  // Commit the new register values to hardware
+  I2C_TypeDef* hardware = (I2C_TypeDef*) instance->i2c_base;
 
-  SET_BIT(I2C4->CR2, I2C_CR2_START );
+  hardware->CR1 = instance->cr1_value;
+  READ_REG(hardware->CR1);
+
+  hardware->CR2 = instance->cr2_value;
+  READ_REG(hardware->CR2);
+
+  SET_BIT(hardware->CR2, I2C_CR2_START);
 
   return H7I2C_RET_CODE_OK;
 }
 
-static int h7i2c_i2c_empty_write_transaction(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout)
+static int h7i2c_i2c_empty_write_transaction(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
 {
-	int const check_ret_val = h7i2c_i2c_pre_transaction_check(instance, timeout);
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+    return H7I2C_RET_CODE_BUSY;
+
+  int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
 
   if (check_ret_val != H7I2C_RET_CODE_OK)
-  	return check_ret_val;
+  {
+    h7i2c_i2c_mutex_release(peripheral);
+    return check_ret_val;
+  }
 
   instance->timestart      = HAL_GetTick();
   instance->timeout        = timeout;
@@ -1834,7 +1335,7 @@ static int h7i2c_i2c_empty_write_transaction(h7i2c_driver_instance_state_t* inst
     ( (0UL << I2C_CR2_RD_WRN_Pos ) & I2C_CR2_RD_WRN ) | // RD_WRN  = 0 (write) or 1 (read)
     ( (0UL << I2C_CR2_ADD10_Pos  ) & I2C_CR2_ADD10  ) | // ADD10   = 0 (7-bit addr) or 1 (10-bit addr)
     ( (0UL << I2C_CR2_HEAD10R_Pos) & I2C_CR2_HEAD10R) | // HEAD10R = 0 (send full 10-bit addr + r/w bit in 10-bit mode) or 1 (send 7-bit addr + r/w bit in 10-bit mode)
-    ( (1UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
+    ( (0UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_STOP_Pos   ) & I2C_CR2_STOP   ) | // STOP    = generate stop bit after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NACK_Pos   ) & I2C_CR2_NACK   ) | // NACK    = send a NACK after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NBYTES_Pos ) & I2C_CR2_NBYTES ) | // NBYTES  = number of bytes to transfer (8 bits, if more than 255 you need to reload)
@@ -1844,31 +1345,37 @@ static int h7i2c_i2c_empty_write_transaction(h7i2c_driver_instance_state_t* inst
 
   MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, (instance->slave_address << I2C_CR2_SADD_Pos   ));
 
-  
-  MODIFY_REG(I2C4->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    instance->cr1_value
-  );
+  // Commit the new register values to hardware
+  I2C_TypeDef* hardware = (I2C_TypeDef*) instance->i2c_base;
 
-  MODIFY_REG(I2C4->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    instance->cr2_value
-  );
+  hardware->CR1 = instance->cr1_value;
+  READ_REG(hardware->CR1);
+
+  hardware->CR2 = instance->cr2_value;
+  READ_REG(hardware->CR2);
+
+  SET_BIT(hardware->CR2, I2C_CR2_START);
 
   return H7I2C_RET_CODE_OK;
 }
 
-static int h7i2c_i2c_empty_read_transaction(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout)
+static int h7i2c_i2c_empty_read_transaction(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
 {
-	int const check_ret_val = h7i2c_i2c_pre_transaction_check(instance, timeout);
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+    return H7I2C_RET_CODE_BUSY;
+
+  int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
 
   if (check_ret_val != H7I2C_RET_CODE_OK)
-  	return check_ret_val;
+  {
+    h7i2c_i2c_mutex_release(peripheral);
+    return check_ret_val;
+  }
 
   instance->timestart      = HAL_GetTick();
   instance->timeout        = timeout;
@@ -1913,7 +1420,7 @@ static int h7i2c_i2c_empty_read_transaction(h7i2c_driver_instance_state_t* insta
     ( (1UL << I2C_CR2_RD_WRN_Pos ) & I2C_CR2_RD_WRN ) | // RD_WRN  = 0 (write) or 1 (read)
     ( (0UL << I2C_CR2_ADD10_Pos  ) & I2C_CR2_ADD10  ) | // ADD10   = 0 (7-bit addr) or 1 (10-bit addr)
     ( (0UL << I2C_CR2_HEAD10R_Pos) & I2C_CR2_HEAD10R) | // HEAD10R = 0 (send full 10-bit addr + r/w bit in 10-bit mode) or 1 (send 7-bit addr + r/w bit in 10-bit mode)
-    ( (1UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
+    ( (0UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_STOP_Pos   ) & I2C_CR2_STOP   ) | // STOP    = generate stop bit after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NACK_Pos   ) & I2C_CR2_NACK   ) | // NACK    = send a NACK after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NBYTES_Pos ) & I2C_CR2_NBYTES ) | // NBYTES  = number of bytes to transfer (8 bits, if more than 255 you need to reload)
@@ -1921,94 +1428,44 @@ static int h7i2c_i2c_empty_read_transaction(h7i2c_driver_instance_state_t* insta
     ( (1UL << I2C_CR2_AUTOEND_Pos) & I2C_CR2_AUTOEND) | // AUTOEND = generate a stop bit after the last byte (when NBYTES = 0) is transferred
     ( (0UL << I2C_CR2_PECBYTE_Pos) & I2C_CR2_PECBYTE) ; // PECBYTE = send the PEC byte after the last data byte  (this is relevant for SMBUS)
 
-	MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, (instance->slave_address << I2C_CR2_SADD_Pos   ));
+  MODIFY_REG(instance->cr2_value,  I2C_CR2_SADD, (instance->slave_address << I2C_CR2_SADD_Pos   ));
 
-  
-  switch ((uint32_t) instance->i2c_base)
-  {
-    case I2C1_BASE:
-      MODIFY_REG(I2C1->CR1,
-          I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-        | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-        | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-        | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-        instance->cr1_value
-      );
+  // Commit the new register values to hardware
+  I2C_TypeDef* hardware = (I2C_TypeDef*) instance->i2c_base;
 
-      MODIFY_REG(I2C1->CR2,
-          I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-        | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-        | I2C_CR2_PECBYTE,
-        instance->cr2_value
-      );
-      break;
+  hardware->CR1 = instance->cr1_value;
+  READ_REG(hardware->CR1);
 
-    case I2C2_BASE:
-      MODIFY_REG(I2C2->CR1,
-          I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-        | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-        | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-        | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-        instance->cr1_value
-      );
+  hardware->CR2 = instance->cr2_value;
+  READ_REG(hardware->CR2);
 
-      MODIFY_REG(I2C2->CR2,
-          I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-        | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-        | I2C_CR2_PECBYTE,
-        instance->cr2_value
-      );
-      break;
-
-    case I2C3_BASE:
-      MODIFY_REG(I2C3->CR1,
-          I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-        | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-        | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-        | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-        instance->cr1_value
-      );
-
-      MODIFY_REG(I2C3->CR2,
-          I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-        | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-        | I2C_CR2_PECBYTE,
-        instance->cr2_value
-      );
-      break;
-
-    case I2C4_BASE:
-      MODIFY_REG(I2C4->CR1,
-          I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-        | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-        | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-        | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-        instance->cr1_value
-      );
-
-      MODIFY_REG(I2C4->CR2,
-          I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-        | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-        | I2C_CR2_PECBYTE,
-        instance->cr2_value
-      );
-      break;
-
-    default:
-      break;
-  }
+  SET_BIT(hardware->CR2, I2C_CR2_START);
 
   return H7I2C_RET_CODE_OK;
 }
 
 
 
-static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t wr_size, uint8_t* wr_buf, uint8_t* rd_buf, uint32_t timeout)
+static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint8_t* wr_buf, uint8_t* rd_buf, uint32_t timeout)
 {
-  int const check_ret_val = h7i2c_i2c_pre_transaction_check(instance, timeout);
+  if (rd_buf == NULL)
+    return H7I2C_RET_CODE_INVALID_ARGS;
+
+  h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
+
+  if (!instance)
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+    return H7I2C_RET_CODE_BUSY;
+
+  int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
 
   if (check_ret_val != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_i2c_mutex_release(peripheral);
     return check_ret_val;
+  }
 
   instance->timestart      = HAL_GetTick();
   instance->timeout        = timeout;
@@ -2032,13 +1489,6 @@ static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_driver_instance
       // We will do only the read
       instance->fsm_state = H7I2C_FSM_STATE_SLAVE_DRIVEN_READ_READSTEP_RXNBYTES;
   }
-  else
-  {
-    // We will do nothing
-    instance->fsm_state = H7I2C_FSM_STATE_IDLE;
-    return H7I2C_RET_CODE_INVALID_ARGS;
-  }
-
 
   // Default value for CR1
   instance->cr1_value =
@@ -2069,7 +1519,7 @@ static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_driver_instance
     ( (0UL << I2C_CR2_RD_WRN_Pos ) & I2C_CR2_RD_WRN ) | // RD_WRN  = 0 (write) or 1 (read)
     ( (0UL << I2C_CR2_ADD10_Pos  ) & I2C_CR2_ADD10  ) | // ADD10   = 0 (7-bit addr) or 1 (10-bit addr)
     ( (0UL << I2C_CR2_HEAD10R_Pos) & I2C_CR2_HEAD10R) | // HEAD10R = 0 (send full 10-bit addr + r/w bit in 10-bit mode) or 1 (send 7-bit addr + r/w bit in 10-bit mode)
-    ( (1UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
+    ( (0UL << I2C_CR2_START_Pos  ) & I2C_CR2_START  ) | // START   = generate start bit and header, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_STOP_Pos   ) & I2C_CR2_STOP   ) | // STOP    = generate stop bit after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NACK_Pos   ) & I2C_CR2_NACK   ) | // NACK    = send a NACK after current byte, 0 (no) or 1 (yes)
     ( (0UL << I2C_CR2_NBYTES_Pos ) & I2C_CR2_NBYTES ) | // NBYTES  = number of bytes to transfer (8 bits, if more than 255 you need to reload)
@@ -2099,142 +1549,145 @@ static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_driver_instance
       break;
   }
 
-  MODIFY_REG(I2C4->CR1,
-      I2C_CR1_PE        | I2C_CR1_TXIE      | I2C_CR1_RXIE      | I2C_CR1_ADDRIE    | I2C_CR1_NACKIE
-    | I2C_CR1_STOPIE    | I2C_CR1_TCIE      | I2C_CR1_ERRIE     | I2C_CR1_DNF       | I2C_CR1_ANFOFF
-    | I2C_CR1_TXDMAEN   | I2C_CR1_RXDMAEN   | I2C_CR1_SBC       | I2C_CR1_NOSTRETCH | I2C_CR1_WUPEN
-    | I2C_CR1_GCEN      | I2C_CR1_SMBHEN    | I2C_CR1_SMBDEN    | I2C_CR1_ALERTEN   | I2C_CR1_PECEN,
-    instance->cr1_value
-  );
+  // Commit the new register values to hardware
+  I2C_TypeDef* hardware = (I2C_TypeDef*) instance->i2c_base;
 
-  MODIFY_REG(I2C4->CR2,
-      I2C_CR2_SADD      | I2C_CR2_RD_WRN    | I2C_CR2_ADD10      | I2C_CR2_HEAD10R      | I2C_CR2_START
-    | I2C_CR2_STOP      | I2C_CR2_NACK      | I2C_CR2_NBYTES     | I2C_CR2_RELOAD       | I2C_CR2_AUTOEND
-    | I2C_CR2_PECBYTE,
-    instance->cr2_value
-  );
+  hardware->CR1 = instance->cr1_value;
+  READ_REG(hardware->CR1);
+
+  hardware->CR2 = instance->cr2_value;
+  READ_REG(hardware->CR2);
+
+  SET_BIT(hardware->CR2, I2C_CR2_START);
 
   return H7I2C_RET_CODE_OK;
 }
 
 
-int h7i2c_i2c_write(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
+
+
+////////////////////////////
+//                        //
+// NON-BLOCKING FUNCTIONS //
+//                        //
+////////////////////////////
+h7i2c_i2c_ret_code_t h7i2c_i2c_write_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, data_size, 0U, data_buf, NULL, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, data_size, 0U, data_buf, NULL, timeout);
 }
 
-int h7i2c_i2c_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_i2c_read_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 0U, data_size, NULL, data_buf, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 0U, data_size, NULL, data_buf, timeout);
 }
 
-int h7i2c_i2c_write_then_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_i2c_write_then_read_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, wr_size, rd_size, wr_buf, rd_buf, timeout);
-}
-
-
-int h7i2c_smbus_quickcommand_write(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout)
-{
-  return h7i2c_i2c_empty_write_transaction(instance, dev_address, timeout);
-}
-
-int h7i2c_smbus_quickcommand_read(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout)
-{
-  return h7i2c_i2c_empty_read_transaction(instance, dev_address, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, wr_size, rd_size, wr_buf, rd_buf, timeout);
 }
 
 
-int h7i2c_smbus_sendbyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_quickcommand_write_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 0U, byte, NULL, timeout);
+  return h7i2c_i2c_empty_write_transaction(peripheral, dev_address, timeout);
 }
 
-int h7i2c_smbus_receivebyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_quickcommand_read_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 0U, 1U, NULL, byte, timeout);
+  return h7i2c_i2c_empty_read_transaction(peripheral, dev_address, timeout);
 }
 
 
-int h7i2c_smbus_writebyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_sendbyte_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+{
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 1U, 0U, byte, NULL, timeout);
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_receivebyte_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+{
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 0U, 1U, NULL, byte, timeout);
+}
+
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_writebyte_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
 {
   uint8_t tx_buf[2];
   tx_buf[0] = command;
   tx_buf[1] = byte[0];
-	return h7i2c_i2c_write_read_transaction(instance, dev_address, 2U, 0U, tx_buf, NULL, timeout);
+	return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 2U, 0U, tx_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_readbyte(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_readbyte_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
 {
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 1U, &command, byte, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 1U, 1U, &command, byte, timeout);
 }
 
 
-int h7i2c_smbus_writeword(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_writeword_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
 {
   uint8_t wr_buf[3];
   wr_buf[0] = command;
   wr_buf[1] = (word[0] & 0x00FF);
   wr_buf[2] = (word[0] & 0xFF00) >> 8U;
-	return h7i2c_i2c_write_read_transaction(instance, dev_address, 3U, 0U, wr_buf, NULL, timeout);
+	return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 3U, 0U, wr_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_readword(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_readword_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
 {
   uint8_t rd_buf[2];
-  uint32_t ret = h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 2U, &command, rd_buf, timeout);
+  uint32_t ret = h7i2c_i2c_write_read_transaction(peripheral, dev_address, 1U, 2U, &command, rd_buf, timeout);
   word[0] = ((uint16_t)rd_buf[0]) + ( ((uint16_t)rd_buf[1]) << 8U );
   return ret;
 }
 
 
-int h7i2c_smbus_processcall(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_processcall_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout)
 {
   uint8_t tx_buf[3];
   uint8_t rx_buf[2];
   tx_buf[0] = command;
   tx_buf[1] = (wr_word[0] & 0x00FF);
   tx_buf[2] = (wr_word[0] & 0xFF00) >> 8U;
-  uint32_t ret = h7i2c_i2c_write_read_transaction(instance, dev_address, 3U, 2U, tx_buf, rx_buf, timeout);
+  uint32_t ret = h7i2c_i2c_write_read_transaction(peripheral, dev_address, 3U, 2U, tx_buf, rx_buf, timeout);
   rd_word[0] = ((uint16_t)rx_buf[0]) + ( ((uint16_t)rx_buf[1]) << 8U );
   return ret;
 }
 
 
-int h7i2c_smbus_blockwrite(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockwrite_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout)
 {
   uint8_t tx_buf[257];
   tx_buf[0] = command;
   tx_buf[1] = wr_size;
   memcpy(&(tx_buf[2]), wr_buf, wr_size);
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 2U + wr_size, 0U, tx_buf, NULL, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 2U + wr_size, 0U, tx_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_blockread(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockread_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout)
 {
   uint8_t rx_buf[256];
-  uint32_t ret = h7i2c_smbus_write_slave_driven_read_transaction(instance, dev_address, 1U, &command, rd_buf, timeout);
+  uint32_t ret = h7i2c_smbus_write_slave_driven_read_transaction(peripheral, dev_address, 1U, &command, rd_buf, timeout);
   *rd_size = rx_buf[0];
   memcpy(&(rx_buf[1]), rd_buf, *rd_size);
   return ret;
 }
 
 
-int h7i2c_smbus_blockwrite_blockread_processcall(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command,
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockwrite_blockread_processcall_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command,
   uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout)
 {
   uint8_t tx_buf[257];
   uint8_t rx_buf[256];
   tx_buf[0] = command;
   tx_buf[1] = wr_size;
-  uint32_t ret = h7i2c_smbus_write_slave_driven_read_transaction(instance, dev_address, wr_size, tx_buf, rx_buf, timeout);
+  uint32_t ret = h7i2c_smbus_write_slave_driven_read_transaction(peripheral, dev_address, wr_size, tx_buf, rx_buf, timeout);
   *rd_size = rx_buf[0];
   memcpy(&(rx_buf[1]), rd_buf, *rd_size);
   return ret;
 }
 
 
-int h7i2c_smbus_write32(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_write32_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
 {
   uint8_t wr_buf[5];
   wr_buf[0] = command;
@@ -2242,13 +1695,13 @@ int h7i2c_smbus_write32(h7i2c_driver_instance_state_t* instance, uint16_t dev_ad
   wr_buf[2] = (word32[0] & 0x0000FF00UL) >>  8U;
   wr_buf[3] = (word32[0] & 0x00FF0000UL) >> 16U;
   wr_buf[4] = (word32[0] & 0xFF000000UL) >> 24U;
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 5U, 0U, wr_buf, NULL, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 5U, 0U, wr_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_read32(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_read32_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
 {
   uint8_t rd_buf[4];
-  uint32_t ret = h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 4U, &command, rd_buf, timeout);
+  uint32_t ret = h7i2c_i2c_write_read_transaction(peripheral, dev_address, 1U, 4U, &command, rd_buf, timeout);
   word32[0] =
         ( ((uint32_t)rd_buf[0])        )
       + ( ((uint32_t)rd_buf[1]) <<  8U )
@@ -2258,7 +1711,7 @@ int h7i2c_smbus_read32(h7i2c_driver_instance_state_t* instance, uint16_t dev_add
 }
 
 
-int h7i2c_smbus_write64(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_write64_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
 {
   uint8_t wr_buf[9];
   wr_buf[0] = command;
@@ -2270,13 +1723,13 @@ int h7i2c_smbus_write64(h7i2c_driver_instance_state_t* instance, uint16_t dev_ad
   wr_buf[6] = (word64[0] & 0x0000FF0000000000ULL) >> 40U;
   wr_buf[7] = (word64[0] & 0x00FF000000000000ULL) >> 48U;
   wr_buf[8] = (word64[0] & 0xFF00000000000000ULL) >> 56U;
-  return h7i2c_i2c_write_read_transaction(instance, dev_address, 9U, 0U, wr_buf, NULL, timeout);
+  return h7i2c_i2c_write_read_transaction(peripheral, dev_address, 9U, 0U, wr_buf, NULL, timeout);
 }
 
-int h7i2c_smbus_read64(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
+h7i2c_i2c_ret_code_t h7i2c_smbus_read64_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
 {
   uint8_t rd_buf[8];
-  uint32_t ret = h7i2c_i2c_write_read_transaction(instance, dev_address, 1U, 8U, &command, rd_buf, timeout);
+  uint32_t ret = h7i2c_i2c_write_read_transaction(peripheral, dev_address, 1U, 8U, &command, rd_buf, timeout);
   word64[0] =
         ( ((uint64_t)rd_buf[0])        )
       + ( ((uint64_t)rd_buf[1]) <<  8U )
@@ -2292,4 +1745,274 @@ int h7i2c_smbus_read64(h7i2c_driver_instance_state_t* instance, uint16_t dev_add
 
 
 
+////////////////////////
+//                    //
+// BLOCKING FUNCTIONS //
+//                    //
+////////////////////////
+h7i2c_i2c_ret_code_t h7i2c_i2c_write(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_i2c_write_nonblocking(peripheral, dev_address, data_size, data_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
 
+h7i2c_i2c_ret_code_t h7i2c_i2c_read(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_i2c_read_nonblocking(peripheral, dev_address, data_size, data_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_i2c_write_then_read(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_i2c_write_then_read_nonblocking(peripheral, dev_address, wr_size, rd_size, wr_buf, rd_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_quickcommand_write(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_quickcommand_write_nonblocking(peripheral, dev_address, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_quickcommand_read(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_quickcommand_read_nonblocking(peripheral, dev_address, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_sendbyte(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_sendbyte_nonblocking(peripheral, dev_address, byte, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_receivebyte(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_receivebyte_nonblocking(peripheral, dev_address, byte, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_writebyte(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_writebyte_nonblocking(peripheral, dev_address, command, byte, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_readbyte(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_readbyte_nonblocking(peripheral, dev_address, command, byte, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_writeword(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_writeword_nonblocking(peripheral, dev_address, command, word, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_readword(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_readword_nonblocking(peripheral, dev_address, command, word, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_processcall(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_processcall_nonblocking(peripheral, dev_address, command, wr_word, rd_word, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockwrite(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_blockwrite_nonblocking(peripheral, dev_address, command, wr_size, wr_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockread(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_blockread_nonblocking(peripheral, dev_address, command, rd_size, rd_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_blockwrite_blockread_processcall(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size,
+  uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_blockwrite_blockread_processcall_nonblocking(peripheral, dev_address, command, wr_size, rd_size, wr_buf, rd_buf, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_write32(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_write32_nonblocking(peripheral, dev_address, command, word32, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_read32(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_read32_nonblocking(peripheral, dev_address, command, word32, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_write64(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_write64_nonblocking(peripheral, dev_address, command, word64, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}
+
+h7i2c_i2c_ret_code_t h7i2c_smbus_read64(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout)
+{
+  h7i2c_i2c_ret_code_t ret = h7i2c_smbus_read64_nonblocking(peripheral, dev_address, command, word64, timeout);
+  if (ret != H7I2C_RET_CODE_OK)
+  {
+    h7i2c_wait_until_ready(peripheral, timeout);
+    return ret;
+  }
+  else
+  {
+    return h7i2c_wait_until_ready(peripheral, timeout);
+  }
+}

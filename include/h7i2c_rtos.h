@@ -38,58 +38,41 @@
 #ifndef INC_H7I2C_RTOS_H_
 #define INC_H7I2C_RTOS_H_
 
-#include "stdint.h"
+#include <stdint.h>
 
 #include "h7i2c_config.h"
-
-
-#if H7I2C_USE_FREERTOS_IMPL == 1
-
-
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-
 #include "h7i2c_bare.h"
 
-typedef struct h7i2c_rtos_driver_instance_state_t
-{
-  h7i2c_driver_instance_state_t* bare_driver_instance;
-  SemaphoreHandle_t mutex_rtos;
-  StaticSemaphore_t mutex_rtos_buffer;
-} h7i2c_rtos_driver_instance_state_t;
 
+int h7i2c_i2c_write_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+int h7i2c_i2c_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
 
-int h7i2c_i2c_write_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
-int h7i2c_i2c_read_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+int h7i2c_i2c_write_then_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
 
-int h7i2c_i2c_write_then_read_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
+int h7i2c_smbus_quickcommand_write_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout);
+int h7i2c_smbus_quickcommand_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout);
 
-int h7i2c_smbus_quickcommand_write_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout);
-int h7i2c_smbus_quickcommand_read_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint32_t timeout);
+int h7i2c_smbus_sendbyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_receivebyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_sendbyte_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_receivebyte_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_writebyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_readbyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_writebyte_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_readbyte_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_writeword_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_readword_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
 
-int h7i2c_smbus_writeword_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
-int h7i2c_smbus_readword_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_processcall_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
 
-int h7i2c_smbus_processcall_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
+int h7i2c_smbus_blockwrite_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
+int h7i2c_smbus_blockread_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_blockwrite_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
-int h7i2c_smbus_blockread_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
+int h7i2c_smbus_blockwritereadprocesscall_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_blockwritereadprocesscall_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
+int h7i2c_smbus_write32_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_read32_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
 
-int h7i2c_smbus_write32_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
-int h7i2c_smbus_read32_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_write64_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+int h7i2c_smbus_read64_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
 
-int h7i2c_smbus_write64_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-int h7i2c_smbus_read64_rtos_blocking(h7i2c_driver_instance_state_t* instance, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-
-#endif /* H7I2C_USE_FREERTOS_IMPL */
 
 #endif /* INC_H7I2C_RTOS_H_ */

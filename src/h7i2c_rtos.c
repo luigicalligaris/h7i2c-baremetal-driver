@@ -47,6 +47,15 @@
 
 #include "h7i2c_rtos.h"
 #include "h7i2c_bare.h"
+#include "h7i2c_bare_priv.h"
+
+
+typedef struct h7i2c_rtos_driver_instance_state_t
+{
+  h7i2c_driver_instance_state_t* bare_driver_instance;
+  SemaphoreHandle_t mutex_rtos;
+  StaticSemaphore_t mutex_rtos_buffer;
+} h7i2c_rtos_driver_instance_state_t;
 
 
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1
