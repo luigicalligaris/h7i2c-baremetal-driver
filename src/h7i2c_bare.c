@@ -61,6 +61,14 @@ h7i2c_driver_instance_state_t h7i2c_state_i2c1 =
   .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
   .timestart     = 0x00000000, .timeout   = 0x00000000
 };
+
+h7i2c_periph_init_config_t current_periph_init_config_i2c1 = 
+{
+  .pin_scl  = H7I2C_PIN_I2C1_SCL_PB6,
+  .pin_sda  = H7I2C_PIN_I2C1_SDA_PB7,
+  .timingr  = 0x90204DFD,
+  .timeoutr = 0x000084C4
+};
 #endif
 
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
@@ -75,6 +83,14 @@ h7i2c_driver_instance_state_t h7i2c_state_i2c2 =
   .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
   .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
   .timestart     = 0x00000000, .timeout   = 0x00000000
+};
+
+h7i2c_periph_init_config_t current_periph_init_config_i2c2 = 
+{
+  .pin_scl  = H7I2C_PIN_I2C2_SCL_PB10,
+  .pin_sda  = H7I2C_PIN_I2C2_SDA_PB11,
+  .timingr  = 0x90204DFD,
+  .timeoutr = 0x000084C4
 };
 #endif
 
@@ -91,6 +107,14 @@ h7i2c_driver_instance_state_t h7i2c_state_i2c3 =
   .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
   .timestart     = 0x00000000, .timeout   = 0x00000000
 };
+
+h7i2c_periph_init_config_t current_periph_init_config_i2c3 = 
+{
+  .pin_scl  = H7I2C_PIN_I2C3_SCL_PA8,
+  .pin_sda  = H7I2C_PIN_I2C3_SDA_PC9,
+  .timingr  = 0x90204DFD,
+  .timeoutr = 0x000084C4
+};
 #endif
 
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
@@ -105,6 +129,14 @@ h7i2c_driver_instance_state_t h7i2c_state_i2c4 =
   .wr_todo       = 0x00000000, .wr_done   = 0x00000000, .wr_data = NULL,
   .rd_todo       = 0x00000000, .rd_done   = 0x00000000, .rd_data = NULL,
   .timestart     = 0x00000000, .timeout   = 0x00000000
+};
+
+h7i2c_periph_init_config_t current_periph_init_config_i2c4 = 
+{
+  .pin_scl  = H7I2C_PIN_I2C4_SCL_PF14,
+  .pin_sda  = H7I2C_PIN_I2C4_SDA_PF15,
+  .timingr  = 0x90204DFD,
+  .timeoutr = 0x000084C4
 };
 #endif
 
@@ -382,6 +414,40 @@ static void h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral)
 
 h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
 {
+  switch(peripheral)
+  {
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1
+    case H7I2C_I2C1:
+      h7i2c_i2c_init_by_config(peripheral, &current_periph_init_config_i2c1);
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C2 == 1
+    case H7I2C_I2C2:
+      h7i2c_i2c_init_by_config(peripheral, &current_periph_init_config_i2c2);
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C3 == 1
+    case H7I2C_I2C3:
+      h7i2c_i2c_init_by_config(peripheral, &current_periph_init_config_i2c3);
+      break;
+#endif
+#if H7I2C_PERIPH_ENABLE_I2C4 == 1
+    case H7I2C_I2C4:
+      h7i2c_i2c_init_by_config(peripheral, &current_periph_init_config_i2c4);
+      break;
+#endif
+    default:
+      break;
+  };
+  return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+}
+
+
+h7i2c_i2c_ret_code_t h7i2c_i2c_init_by_config(h7i2c_periph_t peripheral, h7i2c_periph_init_config_t* init_config)
+{
+  if (!init_config)
+    return H7I2C_RET_CODE_INVALID_ARGS;
+
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   switch(peripheral)
@@ -390,24 +456,28 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
     case H7I2C_I2C1:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C1CLKSOURCE_D2PCLK1;
+      memcpy(&current_periph_init_config_i2c1, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
     case H7I2C_I2C2:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C2CLKSOURCE_D2PCLK1;
+      memcpy(&current_periph_init_config_i2c2, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
     case H7I2C_I2C3:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C3CLKSOURCE_D2PCLK1;
+      memcpy(&current_periph_init_config_i2c3, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
     case H7I2C_I2C4:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C4;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C4CLKSOURCE_D3PCLK1;
+      memcpy(&current_periph_init_config_i2c4, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
     default:
@@ -426,34 +496,97 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
       // When the M7 core pauses we want the I2C1 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C1, DBGMCU_APB1LFZ1_DBG_I2C1);
 
-      __HAL_RCC_GPIOB_CLK_ENABLE();
+      //
+      // *** GPIO PIN SETUP ***
+      //
 
-      // GPIOB AFRL: Set alternate function I2C1 = 4 = 0b0100 (see datasheet tab 10) to pins PB6 (I2C1_SCL) and PB7 (I2C1_SDA)
-      MODIFY_REG(GPIOB->AFR[0], 0b1111 << 24 | 0b1111 << 28, 0b0100 << 24 | 0b0100 << 28);
+      switch(init_config->pin_scl)
+      {
+        case H7I2C_PIN_I2C1_SCL_PB6:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
 
-      // GPIOB OSPEEDR: Set very high speed = 0b11 to pins PB6 and PB7
-      MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 12 | 0b11 << 14, 0b11 << 12 | 0b11 << 14);
+          // GPIOB AFRL: Set alternate function I2C1 = 4 = 0b0100 (see datasheet chapt 5) to pin PB6  (I2C1_SCL)
+          MODIFY_REG(GPIOB->AFR[0], 0b1111 << 24, 0b0100 << 24);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB6
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 12, 0b11 << 12);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB6
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 12, 0b01 << 12);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB6
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  6, 0b1 <<  6);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB6
+          MODIFY_REG(GPIOB->MODER, 0b11 << 12, 0b10 << 12);
+          break;
 
-      // GPIOB PUPDR: Set pull-up = 0b01 to pins PB6 and PB7
-      MODIFY_REG(GPIOB->PUPDR, 0b11 << 12 | 0b11 << 14, 0b01 << 12 | 0b01 << 14);
+        case H7I2C_PIN_I2C1_SCL_PB8:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
 
-      // GPIOB OTYPEDR: Set open drain = 0b1 to pins PB6 and PB7
-      MODIFY_REG(GPIOB->OTYPER, 0b1 <<  6 | 0b1 <<  7, 0b1 <<  6 | 0b1 <<  7);
+          // GPIOB AFRL: Set alternate function I2C1 = 4 = 0b0100 (see datasheet chapt 5) to pin PB8  (I2C1_SCL)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111      , 0b0100      );
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB8
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 16, 0b11 << 16);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB8
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 16, 0b01 << 16);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB8
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  8, 0b1 <<  8);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB8
+          MODIFY_REG(GPIOB->MODER, 0b11 << 16, 0b10 << 16);
+          break;
 
-      // GPIOB MODER: Set alternate mode = 0b10 to pins PB6 and PB7
-      MODIFY_REG(GPIOB->MODER, 0b11 << 12 | 0b11 << 14, 0b10 << 12 | 0b10 << 14);
+        default:
+          Error_Handler();
+      }
+
+      switch(init_config->pin_sda)
+      {
+        case H7I2C_PIN_I2C1_SDA_PB7:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
+
+          // GPIOB AFRL: Set alternate function I2C1 = 4 = 0b0100 (see datasheet chapt 5) to pin PB7  (I2C1_SDA)
+          MODIFY_REG(GPIOB->AFR[0], 0b1111 << 28, 0b0100 << 28);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB7
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 14, 0b11 << 14);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB7
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 14, 0b01 << 14);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB7
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  7, 0b1 <<  7);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB7
+          MODIFY_REG(GPIOB->MODER, 0b11 << 14, 0b10 << 14);
+          break;
+
+        case H7I2C_PIN_I2C1_SDA_PB9:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
+
+          // GPIOB AFRL: Set alternate function I2C1 = 4 = 0b0100 (see datasheet chapt 5) to pin PB9  (I2C1_SCL)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111 <<  4, 0b0100 <<  4);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB9
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 18, 0b11 << 18);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB9
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 18, 0b01 << 18);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB9
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  9, 0b1 <<  9);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB9
+          MODIFY_REG(GPIOB->MODER, 0b11 << 18, 0b10 << 18);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      //
+      // *** I2C SETUP ***
+      //
 
       __HAL_RCC_I2C1_CLK_ENABLE();
 
       // The timing register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C1->TIMINGR, I2C_TIMINGR_SCLL | I2C_TIMINGR_SCLH | I2C_TIMINGR_SDADEL | I2C_TIMINGR_SCLDEL | I2C_TIMINGR_PRESC,
-        0x90204DFD);
+        init_config->timingr);
 
       // The timeout register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C1->TIMEOUTR, I2C_TIMEOUTR_TIMEOUTA | I2C_TIMEOUTR_TIDLE | I2C_TIMEOUTR_TIMOUTEN | I2C_TIMEOUTR_TIMEOUTB | I2C_TIMEOUTR_TEXTEN,
-        0x000084C4);
+        init_config->timeoutr);
 
       // Disable all own addresses. The peripheral will only be used as master.
       MODIFY_REG(I2C1->OAR1, I2C_OAR1_OA1 | I2C_OAR1_OA1MODE | I2C_OAR1_OA1EN,
@@ -467,10 +600,16 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
         | ( (0b0    << I2C_OAR2_OA2EN_Pos ) & I2C_OAR2_OA2EN  )
       );
 
+      //
+      // *** NVIC SETUP ***
+      //
+
       HAL_NVIC_SetPriority(I2C1_EV_IRQn, 6, 1);
       HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
       HAL_NVIC_SetPriority(I2C1_ER_IRQn, 6, 0);
       HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
+
+      h7i2c_state_i2c1.fsm_state = H7I2C_FSM_STATE_IDLE;
 
       break;
 #endif
@@ -479,34 +618,127 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
       // When the M7 core pauses we want the I2C2 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C2, DBGMCU_APB1LFZ1_DBG_I2C2);
 
-      __HAL_RCC_GPIOF_CLK_ENABLE();
+      //
+      // *** GPIO PIN SETUP ***
+      //
 
-      // GPIOF AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet tab 14) to pins PF0 (I2C2_SDA) and PF1 (I2C2_SCL)
-      MODIFY_REG(GPIOF->AFR[0], 0b1111 <<  0 | 0b1111 <<  4, 0b0100 <<  0 | 0b0100 <<  4);
+      switch(init_config->pin_scl)
+      {
+        case H7I2C_PIN_I2C2_SCL_PB10:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
 
-      // GPIOF OSPEEDR: Set very high speed = 0b11 to pins PF0 and PF1
-      MODIFY_REG(GPIOF->OSPEEDR, 0b11 <<  0 | 0b11 <<  2, 0b11 <<  0 | 0b11 <<  2);
+          // GPIOB AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PB10 (I2C2_SCL)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111 <<  8, 0b0100 <<  8);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB10
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 20, 0b11 << 20);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB10
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 20, 0b01 << 20);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB10
+          MODIFY_REG(GPIOB->OTYPER, 0b1 << 10, 0b1 << 10);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB10
+          MODIFY_REG(GPIOB->MODER, 0b11 << 20, 0b10 << 20);
+          break;
 
-      // GPIOF PUPDR: Set pull-up = 0b01 to pins PF0 and PF1
-      MODIFY_REG(GPIOF->PUPDR, 0b11 <<  0 | 0b11 <<  2, 0b01 <<  0 | 0b01 <<  2);
+        case H7I2C_PIN_I2C2_SCL_PF1:
+          __HAL_RCC_GPIOF_CLK_ENABLE();
 
-      // GPIOB OTYPEDR: Set open drain = 0b1 to pins PF0 and PF1
-      MODIFY_REG(GPIOB->OTYPER, 0b1 <<  0 | 0b1 <<  1, 0b1 <<  0 | 0b1 <<  1);
+          // GPIOF AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PF1  (I2C2_SCL)
+          MODIFY_REG(GPIOF->AFR[0], 0b1111 <<  4, 0b0100 <<  4);
+          // GPIOF OSPEEDR: Set very high speed = 0b11 to pin PF1
+          MODIFY_REG(GPIOF->OSPEEDR, 0b11 <<  2, 0b11 <<  2);
+          // GPIOF PUPDR: Set pull-up = 0b01 to pin PF1
+          MODIFY_REG(GPIOF->PUPDR, 0b11 <<  2, 0b01 <<  2);
+          // GPIOF OTYPEDR: Set open drain = 0b1 to pin PF1
+          MODIFY_REG(GPIOF->OTYPER, 0b1 <<  1, 0b1 <<  1);
+          // GPIOF MODER: Set alternate mode = 0b10 to pins PF1
+          MODIFY_REG(GPIOF->MODER, 0b11 <<  2, 0b10 <<  2);
+          break;
 
-      // GPIOB MODER: Set alternate mode = 0b10 to pins PF0 and PF1
-      MODIFY_REG(GPIOB->MODER, 0b11 <<  0 | 0b11 <<  2, 0b10 <<  0 | 0b10 <<  2);
+        case H7I2C_PIN_I2C2_SCL_PH4:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
+
+          // GPIOH AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PH4  (I2C2_SCL)
+          MODIFY_REG(GPIOH->AFR[0], 0b1111 << 16, 0b0100 << 16);
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PH4
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 <<  8, 0b11 <<  8);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PH4
+          MODIFY_REG(GPIOH->PUPDR, 0b11 <<  8, 0b01 <<  8);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PH4
+          MODIFY_REG(GPIOH->OTYPER, 0b1 <<  4, 0b1 <<  4);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PH4
+          MODIFY_REG(GPIOH->MODER, 0b11 <<  8, 0b10 <<  8);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      switch(init_config->pin_sda)
+      {
+        case H7I2C_PIN_I2C2_SDA_PB11:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
+
+          // GPIOB AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PB11 (I2C2_SDA)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111 << 12, 0b0100 << 12);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB11
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 22, 0b11 << 22);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB11
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 22, 0b01 << 22);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB11
+          MODIFY_REG(GPIOB->OTYPER, 0b1 << 11, 0b1 << 11);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB11
+          MODIFY_REG(GPIOB->MODER, 0b11 << 22, 0b10 << 22);
+          break;
+
+        case H7I2C_PIN_I2C2_SDA_PF0:
+          __HAL_RCC_GPIOF_CLK_ENABLE();
+
+          // GPIOF AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PF0  (I2C2_SCL)
+          MODIFY_REG(GPIOF->AFR[0], 0b1111      , 0b0100      );
+          // GPIOF OSPEEDR: Set very high speed = 0b11 to pin PF0
+          MODIFY_REG(GPIOF->OSPEEDR, 0b11      , 0b11      );
+          // GPIOF PUPDR: Set pull-up = 0b01 to pin PF0
+          MODIFY_REG(GPIOF->PUPDR, 0b11      , 0b01      );
+          // GPIOF OTYPEDR: Set open drain = 0b1 to pin PF0
+          MODIFY_REG(GPIOF->OTYPER, 0b1      , 0b1      );
+          // GPIOF MODER: Set alternate mode = 0b10 to pins PF0
+          MODIFY_REG(GPIOF->MODER, 0b11      , 0b10      );
+          break;
+
+        case H7I2C_PIN_I2C2_SDA_PH5:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
+
+          // GPIOH AFRL: Set alternate function I2C2 = 4 = 0b0100 (see datasheet chapt 5) to pin PH5  (I2C2_SCL)
+          MODIFY_REG(GPIOH->AFR[0], 0b1111 << 20, 0b0100 << 20);
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PB8
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 << 10, 0b11 << 10);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PB8
+          MODIFY_REG(GPIOH->PUPDR, 0b11 << 10, 0b01 << 10);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PB8
+          MODIFY_REG(GPIOH->OTYPER, 0b1 <<  5, 0b1 <<  5);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PB8
+          MODIFY_REG(GPIOH->MODER, 0b11 << 10, 0b10 << 10);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      //
+      // *** I2C SETUP ***
+      //
 
       __HAL_RCC_I2C2_CLK_ENABLE();
 
       // The timing register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C2->TIMINGR, I2C_TIMINGR_SCLL | I2C_TIMINGR_SCLH | I2C_TIMINGR_SDADEL | I2C_TIMINGR_SCLDEL | I2C_TIMINGR_PRESC,
-        0x90204DFD);
+        init_config->timingr);
 
       // The timeout register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C2->TIMEOUTR, I2C_TIMEOUTR_TIMEOUTA | I2C_TIMEOUTR_TIDLE | I2C_TIMEOUTR_TIMOUTEN | I2C_TIMEOUTR_TIMEOUTB | I2C_TIMEOUTR_TEXTEN,
-        0x000084C4);
+        init_config->timeoutr);
 
       // Disable all own addresses. The peripheral will only be used as master.
       MODIFY_REG(I2C2->OAR1, I2C_OAR1_OA1 | I2C_OAR1_OA1MODE | I2C_OAR1_OA1EN,
@@ -520,10 +752,16 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
         | ( (0b0    << I2C_OAR2_OA2EN_Pos ) & I2C_OAR2_OA2EN  )
       );
 
+      //
+      // *** NVIC SETUP ***
+      //
+
       HAL_NVIC_SetPriority(I2C2_EV_IRQn, 6, 3);
       HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
       HAL_NVIC_SetPriority(I2C2_ER_IRQn, 6, 2);
       HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
+
+      h7i2c_state_i2c2.fsm_state = H7I2C_FSM_STATE_IDLE;
 
       break;
 #endif
@@ -532,45 +770,97 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
       // When the M7 core pauses we want the I2C3 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB1LFZ1, DBGMCU_APB1LFZ1_DBG_I2C3, DBGMCU_APB1LFZ1_DBG_I2C3);
 
-      __HAL_RCC_GPIOA_CLK_ENABLE();
-      __HAL_RCC_GPIOC_CLK_ENABLE();
+      //
+      // *** GPIO PIN SETUP ***
+      //
 
-      // GPIOA AFRH: Set alternate function I2C3 = 4 = 0b0100 (see datasheet tab 9) to pin PA8 (I2C3_SCL)
-      MODIFY_REG(GPIOA->AFR[1], 0b1111 <<  0, 0b0100 <<  0);
-      // GPIOC AFRH: Set alternate function I2C3 = 4 = 0b0100 (see datasheet tab 9) to pin PC9 (I2C3_SDA)
-      MODIFY_REG(GPIOC->AFR[1], 0b1111 <<  4, 0b0100 <<  4);
+      switch(init_config->pin_scl)
+      {
+        case H7I2C_PIN_I2C3_SCL_PA8:
+          __HAL_RCC_GPIOA_CLK_ENABLE();
 
-      // GPIOA OSPEEDR: Set very high speed = 0b11 to pin PA8
-      MODIFY_REG(GPIOA->OSPEEDR, 0b11 << 16, 0b11 << 16);
-      // GPIOC OSPEEDR: Set very high speed = 0b11 to pin PC9
-      MODIFY_REG(GPIOC->OSPEEDR, 0b11 << 18, 0b11 << 18);
+          // GPIOA AFRL: Set alternate function I2C3 = 4 = 0b0100 (see datasheet chapt 5) to pin PA8  (I2C3_SCL)
+          MODIFY_REG(GPIOA->AFR[1], 0b1111      , 0b0100      );
+          // GPIOA OSPEEDR: Set very high speed = 0b11 to pin PA8
+          MODIFY_REG(GPIOA->OSPEEDR, 0b11 << 16, 0b11 << 16);
+          // GPIOA PUPDR: Set pull-up = 0b01 to pin PA8
+          MODIFY_REG(GPIOA->PUPDR, 0b11 << 16, 0b01 << 16);
+          // GPIOA OTYPEDR: Set open drain = 0b1 to pin PA8
+          MODIFY_REG(GPIOA->OTYPER, 0b1 <<  8, 0b1 <<  8);
+          // GPIOA MODER: Set alternate mode = 0b10 to pins PA8
+          MODIFY_REG(GPIOA->MODER, 0b11 << 16, 0b10 << 16);
+          break;
 
-      // GPIOA PUPDR: Set pull-up = 0b01 to pins PA8
-      MODIFY_REG(GPIOA->PUPDR, 0b11 << 16, 0b01 << 16);
-      // GPIOC PUPDR: Set pull-up = 0b01 to pins PC9
-      MODIFY_REG(GPIOC->PUPDR, 0b11 << 18, 0b01 << 18);
+        case H7I2C_PIN_I2C3_SCL_PH7:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
 
-      // GPIOA OTYPEDR: Set open drain = 0b1 to pins PA8
-      MODIFY_REG(GPIOA->OTYPER, 0b1 <<  8, 0b1 <<  8);
-      // GPIOC OTYPEDR: Set open drain = 0b1 to pins PC9
-      MODIFY_REG(GPIOC->OTYPER, 0b1 <<  9, 0b1 <<  9);
+          // GPIOH AFRL: Set alternate function I2C3 = 4 = 0b0100 (see datasheet chapt 5) to pin PH7  (I2C3_SCL)
+          MODIFY_REG(GPIOH->AFR[1], 0b1111 << 28, 0b0100 << 28);
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PH7
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 << 14, 0b11 << 14);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PH7
+          MODIFY_REG(GPIOH->PUPDR, 0b11 << 14, 0b01 << 14);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PH7
+          MODIFY_REG(GPIOH->OTYPER, 0b1 <<  7, 0b1 <<  7);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PH7
+          MODIFY_REG(GPIOH->MODER, 0b11 << 14, 0b10 << 14);
+          break;
 
-      // GPIOA MODER: Set alternate mode = 0b10 to pins PA8
-      MODIFY_REG(GPIOA->MODER, 0b11 << 16, 0b10 << 16);
-      // GPIOC MODER: Set alternate mode = 0b10 to pins PC9
-      MODIFY_REG(GPIOC->MODER, 0b11 << 18, 0b10 << 18);
+        default:
+          Error_Handler();
+      }
+
+      switch(init_config->pin_sda)
+      {
+        case H7I2C_PIN_I2C3_SDA_PC9:
+          __HAL_RCC_GPIOC_CLK_ENABLE();
+
+          // GPIOC AFRL: Set alternate function I2C3 = 4 = 0b0100 (see datasheet chapt 5) to pin PC9  (I2C3_SDA)
+          MODIFY_REG(GPIOC->AFR[0], 0b1111 << 28, 0b0100 << 28);
+          // GPIOC OSPEEDR: Set very high speed = 0b11 to pin PC9
+          MODIFY_REG(GPIOC->OSPEEDR, 0b11 << 14, 0b11 << 14);
+          // GPIOC PUPDR: Set pull-up = 0b01 to pin PC9
+          MODIFY_REG(GPIOC->PUPDR, 0b11 << 14, 0b01 << 14);
+          // GPIOC OTYPEDR: Set open drain = 0b1 to pin PC9
+          MODIFY_REG(GPIOC->OTYPER, 0b1 <<  7, 0b1 <<  7);
+          // GPIOC MODER: Set alternate mode = 0b10 to pins PC9
+          MODIFY_REG(GPIOC->MODER, 0b11 << 14, 0b10 << 14);
+          break;
+
+        case H7I2C_PIN_I2C3_SDA_PH8:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
+
+          // GPIOH AFRL: Set alternate function I2C3 = 4 = 0b0100 (see datasheet chapt 5) to pin PH8  (I2C3_SCL)
+          MODIFY_REG(GPIOH->AFR[1], 0b1111      , 0b0100      );
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PH8
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 << 16, 0b11 << 16);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PH8
+          MODIFY_REG(GPIOH->PUPDR, 0b11 << 16, 0b01 << 16);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PH8
+          MODIFY_REG(GPIOH->OTYPER, 0b1 <<  8, 0b1 <<  8);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PH8
+          MODIFY_REG(GPIOH->MODER, 0b11 << 16, 0b10 << 16);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      //
+      // *** I2C SETUP ***
+      //
 
       __HAL_RCC_I2C3_CLK_ENABLE();
 
       // The timing register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C3->TIMINGR, I2C_TIMINGR_SCLL | I2C_TIMINGR_SCLH | I2C_TIMINGR_SDADEL | I2C_TIMINGR_SCLDEL | I2C_TIMINGR_PRESC,
-        0x90204DFD);
+        init_config->timingr);
 
       // The timeout register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C3->TIMEOUTR, I2C_TIMEOUTR_TIMEOUTA | I2C_TIMEOUTR_TIDLE | I2C_TIMEOUTR_TIMOUTEN | I2C_TIMEOUTR_TIMEOUTB | I2C_TIMEOUTR_TEXTEN,
-        0x000084C4);
+        init_config->timeoutr);
 
       // Disable all own addresses. The peripheral will only be used as master.
       MODIFY_REG(I2C3->OAR1, I2C_OAR1_OA1 | I2C_OAR1_OA1MODE | I2C_OAR1_OA1EN,
@@ -584,10 +874,16 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
         | ( (0b0    << I2C_OAR2_OA2EN_Pos ) & I2C_OAR2_OA2EN  )
       );
 
+      //
+      // *** NVIC SETUP ***
+      //
+
       HAL_NVIC_SetPriority(I2C3_EV_IRQn, 6, 5);
       HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
       HAL_NVIC_SetPriority(I2C3_ER_IRQn, 6, 4);
       HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
+
+      h7i2c_state_i2c3.fsm_state = H7I2C_FSM_STATE_IDLE;
 
       break;
 #endif
@@ -596,34 +892,187 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
       // When the M7 core pauses we want the I2C4 timeout counter to pause as well
       MODIFY_REG(DBGMCU->APB4FZ1, DBGMCU_APB4FZ1_DBG_I2C4, DBGMCU_APB4FZ1_DBG_I2C4);
 
-      __HAL_RCC_GPIOF_CLK_ENABLE();
+      //
+      // *** GPIO PIN SETUP ***
+      //
 
-      // AFRH: Set alternate function I2C4 = 4 = 0b0100 (see datasheet tab 14) to pins PF14 and PF15
-      MODIFY_REG(GPIOF->AFR[1], 0b1111 << 24 | 0b1111 << 28, 0b0100 << 24 | 0b0100 << 28);
+      switch(init_config->pin_scl)
+      {
+        case H7I2C_PIN_I2C4_SCL_PB6:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
 
-      // OSPEEDR: Set very high speed = 0b11 to pins PF14 and PF15
-      MODIFY_REG(GPIOF->OSPEEDR, 0b11 << 28 | 0b11 << 30, 0b11 << 28 | 0b11 << 30);
+          // GPIOB AFRL: Set alternate function I2C4 = 6 = 0b0110 (see datasheet chapt 5) to pin PB6  (I2C4_SCL)
+          MODIFY_REG(GPIOB->AFR[0], 0b1111 << 24, 0b0110 << 24);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB6
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 12, 0b11 << 12);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB6
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 12, 0b01 << 12);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB6
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  6, 0b1 <<  6);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB6
+          MODIFY_REG(GPIOB->MODER, 0b11 << 12, 0b10 << 12);
+          break;
 
-      // PUPDR: Set pull-up = 0b01 to pins PF14 and PF15
-      MODIFY_REG(GPIOF->PUPDR, 0b11 << 28 | 0b11 << 30, 0b01 << 28 | 0b01 << 30);
+        case H7I2C_PIN_I2C4_SCL_PB8:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
 
-      // OTYPEDR: Set open drain = 0b1 to pins PF14 and PF15
-      MODIFY_REG(GPIOF->OTYPER, 0b1 << 14 | 0b1 << 15, 0b1 << 14 | 0b1 << 15);
+          // GPIOB AFRL: Set alternate function I2C4 = 6 = 0b0110 (see datasheet chapt 5) to pin PB8  (I2C4_SCL)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111      , 0b0110      );
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB8
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 16, 0b11 << 16);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB8
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 16, 0b01 << 16);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB8
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  8, 0b1 <<  8);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB8
+          MODIFY_REG(GPIOB->MODER, 0b11 << 16, 0b10 << 16);
+          break;
 
-      // MODER: Set alternate mode = 0b10 to pins PF14 and PF15
-      MODIFY_REG(GPIOF->MODER, 0b11 << 28 | 0b11 << 30, 0b10 << 28 | 0b10 << 30);
+        case H7I2C_PIN_I2C4_SCL_PD12:
+          __HAL_RCC_GPIOD_CLK_ENABLE();
+
+          // GPIOD AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PD12 (I2C4_SCL)
+          MODIFY_REG(GPIOD->AFR[1], 0b1111 << 16, 0b0100 << 16);
+          // GPIOD OSPEEDR: Set very high speed = 0b11 to pin PH7
+          MODIFY_REG(GPIOD->OSPEEDR, 0b11 << 24, 0b11 << 24);
+          // GPIOD PUPDR: Set pull-up = 0b01 to pin PH7
+          MODIFY_REG(GPIOD->PUPDR, 0b11 << 24, 0b01 << 24);
+          // GPIOD OTYPEDR: Set open drain = 0b1 to pin PH7
+          MODIFY_REG(GPIOD->OTYPER, 0b1 << 12, 0b1 << 12);
+          // GPIOD MODER: Set alternate mode = 0b10 to pins PH7
+          MODIFY_REG(GPIOD->MODER, 0b11 << 24, 0b10 << 24);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PF14:
+          __HAL_RCC_GPIOF_CLK_ENABLE();
+
+          // GPIOF AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PF14 (I2C4_SCL)
+          MODIFY_REG(GPIOF->AFR[1], 0b1111 << 24, 0b0100 << 24);
+          // GPIOF OSPEEDR: Set very high speed = 0b11 to pin PF14
+          MODIFY_REG(GPIOF->OSPEEDR, 0b11 << 28, 0b11 << 28);
+          // GPIOF PUPDR: Set pull-up = 0b01 to pin PF14
+          MODIFY_REG(GPIOF->PUPDR, 0b11 << 28, 0b01 << 28);
+          // GPIOF OTYPEDR: Set open drain = 0b1 to pin PF14
+          MODIFY_REG(GPIOF->OTYPER, 0b1 << 14, 0b1 << 14);
+          // GPIOF MODER: Set alternate mode = 0b10 to pins PF14
+          MODIFY_REG(GPIOF->MODER, 0b11 << 28, 0b10 << 28);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PH11:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
+
+          // GPIOH AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PH11  (I2C4_SCL)
+          MODIFY_REG(GPIOH->AFR[1], 0b1111 << 12, 0b0100 << 12);
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PH11
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 << 22, 0b11 << 22);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PH11
+          MODIFY_REG(GPIOH->PUPDR, 0b11 << 22, 0b01 << 22);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PH11
+          MODIFY_REG(GPIOH->OTYPER, 0b1 << 11, 0b1 << 11);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PH11
+          MODIFY_REG(GPIOH->MODER, 0b11 << 22, 0b10 << 22);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      switch(init_config->pin_sda)
+      {
+        case H7I2C_PIN_I2C4_SDA_PB7:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
+
+          // GPIOB AFRL: Set alternate function I2C4 = 6 = 0b0110 (see datasheet chapt 5) to pin PB7  (I2C4_SDA)
+          MODIFY_REG(GPIOB->AFR[0], 0b1111 << 28, 0b0110 << 28);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB7
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 14, 0b11 << 14);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB7
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 14, 0b01 << 14);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB7
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  7, 0b1 <<  7);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB7
+          MODIFY_REG(GPIOB->MODER, 0b11 << 14, 0b10 << 14);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PB9:
+          __HAL_RCC_GPIOB_CLK_ENABLE();
+
+          // GPIOB AFRL: Set alternate function I2C4 = 6 = 0b0110 (see datasheet chapt 5) to pin PB9  (I2C4_SCL)
+          MODIFY_REG(GPIOB->AFR[1], 0b1111 <<  4, 0b0110 <<  4);
+          // GPIOB OSPEEDR: Set very high speed = 0b11 to pin PB9
+          MODIFY_REG(GPIOB->OSPEEDR, 0b11 << 18, 0b11 << 18);
+          // GPIOB PUPDR: Set pull-up = 0b01 to pin PB9
+          MODIFY_REG(GPIOB->PUPDR, 0b11 << 18, 0b01 << 18);
+          // GPIOB OTYPEDR: Set open drain = 0b1 to pin PB9
+          MODIFY_REG(GPIOB->OTYPER, 0b1 <<  9, 0b1 <<  9);
+          // GPIOB MODER: Set alternate mode = 0b10 to pins PB9
+          MODIFY_REG(GPIOB->MODER, 0b11 << 18, 0b10 << 18);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PD13:
+          __HAL_RCC_GPIOD_CLK_ENABLE();
+
+          // GPIOD AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PD13 (I2C4_SCL)
+          MODIFY_REG(GPIOD->AFR[1], 0b1111 << 20, 0b0100 << 20);
+          // GPIOD OSPEEDR: Set very high speed = 0b11 to pin PD13
+          MODIFY_REG(GPIOD->OSPEEDR, 0b11 << 26, 0b11 << 26);
+          // GPIOD PUPDR: Set pull-up = 0b01 to pin PD13
+          MODIFY_REG(GPIOD->PUPDR, 0b11 << 26, 0b01 << 26);
+          // GPIOD OTYPEDR: Set open drain = 0b1 to pin PD13
+          MODIFY_REG(GPIOD->OTYPER, 0b1 << 13, 0b1 << 13);
+          // GPIOD MODER: Set alternate mode = 0b10 to pins PD13
+          MODIFY_REG(GPIOD->MODER, 0b11 << 26, 0b10 << 26);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PF15:
+          __HAL_RCC_GPIOF_CLK_ENABLE();
+
+          // GPIOF AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PF15 (I2C4_SCL)
+          MODIFY_REG(GPIOF->AFR[1], 0b1111 << 28, 0b0100 << 28);
+          // GPIOF OSPEEDR: Set very high speed = 0b11 to pin PF15
+          MODIFY_REG(GPIOF->OSPEEDR, 0b11 << 30, 0b11 << 30);
+          // GPIOF PUPDR: Set pull-up = 0b01 to pin PF15
+          MODIFY_REG(GPIOF->PUPDR, 0b11 << 30, 0b01 << 30);
+          // GPIOF OTYPEDR: Set open drain = 0b1 to pin PF15
+          MODIFY_REG(GPIOF->OTYPER, 0b1 << 15, 0b1 << 15);
+          // GPIOF MODER: Set alternate mode = 0b10 to pins PF15
+          MODIFY_REG(GPIOF->MODER, 0b11 << 30, 0b10 << 30);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PH12:
+          __HAL_RCC_GPIOH_CLK_ENABLE();
+
+          // GPIOH AFRL: Set alternate function I2C4 = 4 = 0b0100 (see datasheet chapt 5) to pin PH12 (I2C4_SCL)
+          MODIFY_REG(GPIOH->AFR[1], 0b1111 << 16, 0b0100 << 16);
+          // GPIOH OSPEEDR: Set very high speed = 0b11 to pin PH12
+          MODIFY_REG(GPIOH->OSPEEDR, 0b11 << 24, 0b11 << 24);
+          // GPIOH PUPDR: Set pull-up = 0b01 to pin PH12
+          MODIFY_REG(GPIOH->PUPDR, 0b11 << 24, 0b01 << 24);
+          // GPIOH OTYPEDR: Set open drain = 0b1 to pin PH12
+          MODIFY_REG(GPIOH->OTYPER, 0b1 << 12, 0b1 << 12);
+          // GPIOH MODER: Set alternate mode = 0b10 to pins PH12
+          MODIFY_REG(GPIOH->MODER, 0b11 << 24, 0b10 << 24);
+          break;
+
+        default:
+          Error_Handler();
+      }
+
+      //
+      // *** I2C SETUP ***
+      //
 
       __HAL_RCC_I2C4_CLK_ENABLE();
 
       // The timing register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C4->TIMINGR, I2C_TIMINGR_SCLL | I2C_TIMINGR_SCLH | I2C_TIMINGR_SDADEL | I2C_TIMINGR_SCLDEL | I2C_TIMINGR_PRESC,
-        0x90204DFD);
+        init_config->timingr);
 
       // The timeout register value is copypasted from the IOC editor or STM32CubeMX , which both have a calculator providing a register value
       // given the chosen frequency and delay settings.
       MODIFY_REG(I2C4->TIMEOUTR, I2C_TIMEOUTR_TIMEOUTA | I2C_TIMEOUTR_TIDLE | I2C_TIMEOUTR_TIMOUTEN | I2C_TIMEOUTR_TIMEOUTB | I2C_TIMEOUTR_TEXTEN,
-        0x000084C4);
+        init_config->timeoutr);
 
       // Disable all own addresses. The peripheral will only be used as master.
       MODIFY_REG(I2C4->OAR1, I2C_OAR1_OA1 | I2C_OAR1_OA1MODE | I2C_OAR1_OA1EN,
@@ -637,10 +1086,16 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
         | ( (0b0    << I2C_OAR2_OA2EN_Pos ) & I2C_OAR2_OA2EN  )
       );
 
+      //
+      // *** NVIC SETUP ***
+      //
+
       HAL_NVIC_SetPriority(I2C4_EV_IRQn, 6, 7);
       HAL_NVIC_EnableIRQ(I2C4_EV_IRQn);
       HAL_NVIC_SetPriority(I2C4_ER_IRQn, 6, 6);
       HAL_NVIC_EnableIRQ(I2C4_ER_IRQn);
+
+      h7i2c_state_i2c4.fsm_state = H7I2C_FSM_STATE_IDLE;
 
       break;
 #endif
@@ -675,11 +1130,33 @@ void h7i2c_deinit(h7i2c_periph_t peripheral)
       // Disable the peripheral clock
       __HAL_RCC_I2C1_CLK_DISABLE();
 
-      // Deinit the GPIOs used by I2C2
-      // PF1  ---> I2C1_SCL
-      // PF0  ---> I2C1_SDA
-      HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
-      HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
+      // Deinit the GPIOs used by I2C1
+      switch(current_periph_init_config_i2c1.pin_scl)
+      {
+        case H7I2C_PIN_I2C1_SCL_PB6:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
+          break;
+
+        case H7I2C_PIN_I2C1_SCL_PB8:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_8);
+          break;
+
+        default:
+          break;
+      }
+      switch(current_periph_init_config_i2c1.pin_sda)
+      {
+        case H7I2C_PIN_I2C1_SDA_PB7:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
+          break;
+
+        case H7I2C_PIN_I2C1_SDA_PB9:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_9);
+          break;
+
+        default:
+          break;
+      }
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
@@ -695,10 +1172,40 @@ void h7i2c_deinit(h7i2c_periph_t peripheral)
       __HAL_RCC_I2C2_CLK_DISABLE();
 
       // Deinit the GPIOs used by I2C2
-      // PF1  ---> I2C2_SCL
-      // PF0  ---> I2C2_SDA
-      HAL_GPIO_DeInit(GPIOF, GPIO_PIN_1);
-      HAL_GPIO_DeInit(GPIOF, GPIO_PIN_0);
+      switch(current_periph_init_config_i2c2.pin_scl)
+      {
+        case H7I2C_PIN_I2C2_SCL_PB10:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+          break;
+
+        case H7I2C_PIN_I2C2_SCL_PF1:
+          HAL_GPIO_DeInit(GPIOF, GPIO_PIN_1);
+          break;
+
+        case H7I2C_PIN_I2C2_SCL_PH4:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_4);
+          break;
+
+        default:
+          break;
+      }
+      switch(current_periph_init_config_i2c2.pin_sda)
+      {
+        case H7I2C_PIN_I2C2_SDA_PB11:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
+          break;
+
+        case H7I2C_PIN_I2C2_SDA_PF0:
+          HAL_GPIO_DeInit(GPIOF, GPIO_PIN_0);
+          break;
+
+        case H7I2C_PIN_I2C2_SDA_PH5:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_5);
+          break;
+
+        default:
+          break;
+      }
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
@@ -714,10 +1221,32 @@ void h7i2c_deinit(h7i2c_periph_t peripheral)
       __HAL_RCC_I2C3_CLK_DISABLE();
 
       // Deinit the GPIOs used by I2C3
-      // PA8  ---> I2C3_SCL
-      // PC9  ---> I2C3_SDA
-      HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
-      HAL_GPIO_DeInit(GPIOC, GPIO_PIN_9);
+      switch(current_periph_init_config_i2c3.pin_scl)
+      {
+        case H7I2C_PIN_I2C3_SCL_PA8:
+          HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
+          break;
+
+        case H7I2C_PIN_I2C3_SCL_PH7:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_7);
+          break;
+
+        default:
+          break;
+      }
+      switch(current_periph_init_config_i2c3.pin_sda)
+      {
+        case H7I2C_PIN_I2C3_SDA_PC9:
+          HAL_GPIO_DeInit(GPIOC, GPIO_PIN_9);
+          break;
+
+        case H7I2C_PIN_I2C3_SDA_PH8:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_8);
+          break;
+
+        default:
+          break;
+      }
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C4 == 1
@@ -733,10 +1262,56 @@ void h7i2c_deinit(h7i2c_periph_t peripheral)
       __HAL_RCC_I2C4_CLK_DISABLE();
 
       // Deinit the GPIOs used by I2C4
-      // PF14 ---> I2C4_SCL
-      // PF15 ---> I2C4_SDA
-      HAL_GPIO_DeInit(GPIOF, GPIO_PIN_14);
-      HAL_GPIO_DeInit(GPIOF, GPIO_PIN_15);
+      switch(current_periph_init_config_i2c4.pin_scl)
+      {
+        case H7I2C_PIN_I2C4_SCL_PB6:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PB8:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_8);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PD12:
+          HAL_GPIO_DeInit(GPIOD, GPIO_PIN_12);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PF14:
+          HAL_GPIO_DeInit(GPIOF, GPIO_PIN_14);
+          break;
+
+        case H7I2C_PIN_I2C4_SCL_PH11:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_11);
+          break;
+
+        default:
+          break;
+      }
+      switch(current_periph_init_config_i2c4.pin_sda)
+      {
+        case H7I2C_PIN_I2C4_SDA_PB7:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PB9:
+          HAL_GPIO_DeInit(GPIOB, GPIO_PIN_9);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PD13:
+          HAL_GPIO_DeInit(GPIOD, GPIO_PIN_13);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PF15:
+          HAL_GPIO_DeInit(GPIOF, GPIO_PIN_15);
+          break;
+
+        case H7I2C_PIN_I2C4_SDA_PH12:
+          HAL_GPIO_DeInit(GPIOH, GPIO_PIN_12);
+          break;
+
+        default:
+          break;
+      }
       break;
 #endif
     default:

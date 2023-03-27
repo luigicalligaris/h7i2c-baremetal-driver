@@ -88,7 +88,56 @@ typedef enum
 } h7i2c_i2c_ret_code_t;
 
 
+typedef enum
+{
+  H7I2C_PIN_I2C1_SCL_PB6,
+  H7I2C_PIN_I2C1_SCL_PB8,
+  
+  H7I2C_PIN_I2C2_SCL_PB10,
+  H7I2C_PIN_I2C2_SCL_PF1,
+  H7I2C_PIN_I2C2_SCL_PH4,
+  
+  H7I2C_PIN_I2C3_SCL_PA8,
+  H7I2C_PIN_I2C3_SCL_PH7,
+  
+  H7I2C_PIN_I2C4_SCL_PB6,
+  H7I2C_PIN_I2C4_SCL_PB8,
+  H7I2C_PIN_I2C4_SCL_PD12,
+  H7I2C_PIN_I2C4_SCL_PF14,
+  H7I2C_PIN_I2C4_SCL_PH11,
+} h7i2c_pin_scl_t;
+
+typedef enum
+{
+  H7I2C_PIN_I2C1_SDA_PB7,
+  H7I2C_PIN_I2C1_SDA_PB9,
+  
+  H7I2C_PIN_I2C2_SDA_PB11,
+  H7I2C_PIN_I2C2_SDA_PF0,
+  H7I2C_PIN_I2C2_SDA_PH5,
+  
+  H7I2C_PIN_I2C3_SDA_PC9,
+  H7I2C_PIN_I2C3_SDA_PH8,
+  
+  H7I2C_PIN_I2C4_SDA_PB7,
+  H7I2C_PIN_I2C4_SDA_PB9,
+  H7I2C_PIN_I2C4_SDA_PD13,
+  H7I2C_PIN_I2C4_SDA_PF15,
+  H7I2C_PIN_I2C4_SDA_PH12,
+} h7i2c_pin_sda_t;
+
+typedef struct h7i2c_periph_init_config_t
+{
+  h7i2c_pin_scl_t pin_scl;
+  h7i2c_pin_sda_t pin_sda;
+  uint32_t        timingr;
+  uint32_t        timeoutr;
+  
+} h7i2c_periph_init_config_t;
+
+
 h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_init_by_config(h7i2c_periph_t peripheral, h7i2c_periph_init_config_t* init_config);
 void h7i2c_deinit(h7i2c_periph_t peripheral);
 
 int h7i2c_is_ready(h7i2c_periph_t peripheral);
