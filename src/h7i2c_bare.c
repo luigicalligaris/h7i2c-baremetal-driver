@@ -219,6 +219,23 @@ h7i2c_i2c_fsm_state_t h7i2c_get_state(h7i2c_periph_t peripheral)
   return H7I2C_FSM_STATE_UNMANAGED_BY_DRIVER;
 }
 
+int h7i2c_is_in_error(h7i2c_periph_t peripheral)
+{
+  switch(h7i2c_get_state(peripheral))
+  {
+    case H7I2C_FSM_STATE_ERROR_NACKF:
+    case H7I2C_FSM_STATE_ERROR_BERR:
+    case H7I2C_FSM_STATE_ERROR_ARLO:
+    case H7I2C_FSM_STATE_ERROR_OVR:
+    case H7I2C_FSM_STATE_ERROR_PECERR:
+    case H7I2C_FSM_STATE_ERROR_TIMEOUT:
+      return 1;
+    default:
+      break;
+  }
+  return 0;
+}
+
 int h7i2c_is_ready(h7i2c_periph_t peripheral)
 {
   switch(h7i2c_get_state(peripheral))
@@ -232,10 +249,12 @@ int h7i2c_is_ready(h7i2c_periph_t peripheral)
   return 0;
 }
 
-h7i2c_i2c_fsm_state_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout)
+__weak h7i2c_i2c_ret_code_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout)
 {
   uint32_t const timestart = HAL_GetTick();
 
+  // Blocking loop, waiting for the I2C peripheral to become free, to get into error state or to timeout
+  // This version loops until timeout if mutex is busy
   while (HAL_GetTick() - timestart < timeout)
   {
     if (h7i2c_is_ready(peripheral))
@@ -244,9 +263,9 @@ h7i2c_i2c_fsm_state_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t
   return H7I2C_RET_CODE_BUSY;
 }
 
-__weak int h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
+
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock_impl(h7i2c_periph_t peripheral)
 {
-  uint32_t const timestart = HAL_GetTick();
   uint8_t* p_mutex = NULL;
 
   switch(peripheral)
@@ -275,27 +294,50 @@ __weak int h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
       return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
   };
 
-  // This is a simple infinite loop. As this is bare metal code it's supposed not to be an issue, 
-  // but in general it is inefficient. The RTOS implementation solves this with a yield call.
-  while (HAL_GetTick() - timestart < timeout)
+  // Cortex-M exclusive monitor read: sets the exclusive monitor flag on address p_mutex
+  if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(p_mutex))
   {
-    // Cortex-M exclusive monitor read: sets the exclusive monitor flag on address p_mutex
-    if (H7I2C_I2C_MUTEX_UNLOCKED == __LDREXB(p_mutex))
+    // Cortex-M exclusive monitor write: only writes and returns 0 if exclusive 
+    // monitor flag is still set, otherwise return nonzero and write nothing
+    if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, p_mutex))
     {
-      // Cortex-M exclusive monitor write: only writes and returns 0 if exclusive 
-      // monitor flag is still set, otherwise return nonzero and write nothing
-      if (0 == __STREXB(H7I2C_I2C_MUTEX_LOCKED, p_mutex))
-      {
-        __DMB();// Data Memory Barrier
-        return H7I2C_RET_CODE_OK;
-      }
+      __DMB();// Data Memory Barrier
+      return H7I2C_RET_CODE_OK;
     }
   }
   return H7I2C_RET_CODE_BUSY;
 }
 
+__weak h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
+{
+  uint32_t const timestart = HAL_GetTick();
 
-__weak void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
+  // This is a simple infinite loop. As this is bare metal code it's supposed not to be an issue, 
+  // but in general it is inefficient. The RTOS implementation solves this with a yield call.
+  while (HAL_GetTick() - timestart < timeout)
+  {
+    switch ( h7i2c_i2c_mutex_lock_impl(peripheral) )
+    {
+      // We got the mutex
+      case H7I2C_RET_CODE_OK:
+        return H7I2C_RET_CODE_OK;
+
+      // This device is not managed by the driver
+      case H7I2C_RET_CODE_UNMANAGED_BY_DRIVER:
+        return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+
+      // We havent't got the mutex (yet)
+      case H7I2C_RET_CODE_BUSY:
+      default:
+        continue;
+    }
+  }
+
+  // We timed out
+  return H7I2C_RET_CODE_BUSY;
+}
+
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
 {
   uint8_t* p_mutex = NULL;
 
@@ -322,7 +364,7 @@ __weak void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
       break;
 #endif
     default:
-      return;
+      return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
   };
 
   if (H7I2C_I2C_MUTEX_LOCKED == __LDREXB(p_mutex))
@@ -330,24 +372,26 @@ __weak void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
     if (0 == __STREXB(H7I2C_I2C_MUTEX_UNLOCKED, p_mutex))
     {
       __DMB();// Data Memory Barrier
-      return;
+      return H7I2C_RET_CODE_OK;
     }
   }
+  return H7I2C_RET_CODE_OK;
 }
 
-
-__weak void h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral)
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral)
 {
-  h7i2c_i2c_mutex_release(peripheral);
+  return h7i2c_i2c_mutex_release(peripheral);
 }
 
 
-static void h7i2c_i2c_reset_peripheral_full(h7i2c_periph_t peripheral)
+
+
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_peripheral_full(h7i2c_periph_t peripheral)
 {
   h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
 
   if (!instance)
-    return;
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
   I2C_TypeDef* const i2cx = (I2C_TypeDef*) instance->i2c_base;
 
@@ -377,39 +421,47 @@ static void h7i2c_i2c_reset_peripheral_full(h7i2c_periph_t peripheral)
   // Clear the I2C timeout register
   MODIFY_REG(i2cx->TIMEOUTR,
     I2C_TIMEOUTR_TEXTEN | I2C_TIMEOUTR_TIMOUTEN | I2C_TIMEOUTR_TIDLE | I2C_TIMEOUTR_TIMEOUTA | I2C_TIMEOUTR_TIMEOUTB,
-		0x00000000);
+    0x00000000);
 
   // Clear the interrupts
   SET_BIT(i2cx->ICR, I2C_ICR_ADDRCF  | I2C_ICR_NACKCF  | I2C_ICR_STOPCF  | I2C_ICR_BERRCF
     | I2C_ICR_ARLOCF  | I2C_ICR_OVRCF   | I2C_ICR_PECCF   | I2C_ICR_TIMOUTCF| I2C_ICR_ALERTCF);
+
+  return H7I2C_RET_CODE_OK;
 }
 
 
-static void h7i2c_i2c_reset_peripheral_soft(h7i2c_periph_t peripheral)
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_peripheral_soft(h7i2c_periph_t peripheral)
 {
   h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
 
   if (!instance)
-    return;
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
   I2C_TypeDef* i2cx = (I2C_TypeDef*) instance->i2c_base;
 
   CLEAR_BIT(i2cx->CR1, I2C_CR1_PE);
   ((void) READ_BIT(i2cx->CR1, I2C_CR1_PE)); // the cast to void is to suppress the "value computed is not used [-Wunused-value]" warning
   SET_BIT(i2cx->CR1, I2C_CR1_PE);
+
+  return H7I2C_RET_CODE_OK;
 }
 
 
-static void h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral)
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral)
 {
   h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
 
   if (!instance)
-    return;
+    return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
   instance->fsm_state = H7I2C_FSM_STATE_IDLE;
   h7i2c_i2c_mutex_release(peripheral);
+
+  return H7I2C_RET_CODE_OK;
 }
+
+
 
 
 h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral)
@@ -1322,7 +1374,7 @@ void h7i2c_deinit(h7i2c_periph_t peripheral)
 
 h7i2c_i2c_ret_code_t h7i2c_clear_error_state(h7i2c_periph_t peripheral)
 {
-  uint32_t const timeout = 300;
+  uint32_t const timeout = 100;
 
   h7i2c_driver_instance_state_t* instance = h7i2c_get_driver_instance(peripheral);
 
@@ -1700,7 +1752,7 @@ static int h7i2c_i2c_write_read_transaction(h7i2c_periph_t peripheral, uint16_t 
   if (!instance)
     return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
-  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != H7I2C_RET_CODE_OK)
     return H7I2C_RET_CODE_BUSY;
 
   int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
@@ -1856,7 +1908,7 @@ static int h7i2c_i2c_empty_write_transaction(h7i2c_periph_t peripheral, uint16_t
   if (!instance)
     return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
-  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != H7I2C_RET_CODE_OK)
     return H7I2C_RET_CODE_BUSY;
 
   int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
@@ -1941,7 +1993,7 @@ static int h7i2c_i2c_empty_read_transaction(h7i2c_periph_t peripheral, uint16_t 
   if (!instance)
     return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
-  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != H7I2C_RET_CODE_OK)
     return H7I2C_RET_CODE_BUSY;
 
   int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);
@@ -2031,7 +2083,7 @@ static int h7i2c_smbus_write_slave_driven_read_transaction(h7i2c_periph_t periph
   if (!instance)
     return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
-  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != HAL_OK)
+  if (h7i2c_i2c_mutex_lock(peripheral, timeout) != H7I2C_RET_CODE_OK)
     return H7I2C_RET_CODE_BUSY;
 
   int const check_ret_val = h7i2c_i2c_pre_transaction_check(peripheral, timeout);

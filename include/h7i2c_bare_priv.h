@@ -42,7 +42,6 @@
 
 enum {H7I2C_I2C_MUTEX_UNLOCKED = 0, H7I2C_I2C_MUTEX_LOCKED = 1};
 
-
 typedef struct h7i2c_driver_instance_state_t
 {
   h7i2c_i2c_fsm_state_t fsm_state;
@@ -66,11 +65,9 @@ typedef struct h7i2c_driver_instance_state_t
   uint32_t timeout;
 } h7i2c_driver_instance_state_t;
 
-
-int h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout);
-void h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral);
-void h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral);
-int h7i2c_i2c_is_managed_by_this_driver(h7i2c_periph_t peripheral);
-
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock_impl(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral);
 
 #endif // INC_H7I2C_BARE_PRIV_H_

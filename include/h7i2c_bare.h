@@ -140,10 +140,18 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init(h7i2c_periph_t peripheral);
 h7i2c_i2c_ret_code_t h7i2c_i2c_init_by_config(h7i2c_periph_t peripheral, h7i2c_periph_init_config_t* init_config);
 void h7i2c_deinit(h7i2c_periph_t peripheral);
 
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_peripheral_full(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_peripheral_soft(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral);
+
+int h7i2c_i2c_is_managed_by_this_driver(h7i2c_periph_t peripheral);
+
 int h7i2c_is_ready(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout);
+
+int h7i2c_is_in_error(h7i2c_periph_t peripheral);
 h7i2c_i2c_fsm_state_t h7i2c_get_state(h7i2c_periph_t peripheral);
 h7i2c_i2c_ret_code_t h7i2c_clear_error_state(h7i2c_periph_t peripheral);
-
 
 h7i2c_i2c_ret_code_t h7i2c_i2c_write_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
 h7i2c_i2c_ret_code_t h7i2c_i2c_read_nonblocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
