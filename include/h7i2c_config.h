@@ -41,10 +41,10 @@
 // Use these defines to put the peripheral under the responsibility of this driver.
 // You shall mind about collisions with the STM32Cube driver (if you use this driver,
 // the peripheral should be unconfigured in the IOC file).
-#define H7I2C_PERIPH_ENABLE_I2C1 1
+#define H7I2C_PERIPH_ENABLE_I2C1 0
 #define H7I2C_PERIPH_ENABLE_I2C2 0
 #define H7I2C_PERIPH_ENABLE_I2C3 0
-#define H7I2C_PERIPH_ENABLE_I2C4 1
+#define H7I2C_PERIPH_ENABLE_I2C4 0
 
 // Do you want to use the FreeRTOS-compatible function implementations?
 #define H7I2C_USE_FREERTOS_IMPL 0
