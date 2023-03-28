@@ -1,7 +1,7 @@
 
 /*********************************************************************************************/
 /* STM32H7 I2C bare-metal driver                                                             */
-/* Copyright (c) 2022, Luigi Calligaris                                                      */
+/* Copyright (c) 2022-2023, Luigi Calligaris                                                 */
 /* All rights reserved.                                                                      */
 /*                                                                                           */
 /* This software is distributed under the BSD (3-clause) license, which is reproduced below: */
@@ -38,36 +38,41 @@
 #ifndef INC_H7I2C_RTOS_H_
 #define INC_H7I2C_RTOS_H_
 
-#include "stdint.h"
+#include <stdint.h>
 
-int h7i2c_i2c_write_rtos_blocking(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
-int h7i2c_i2c_read_rtos_blocking(uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+#include "h7i2c_config.h"
+#include "h7i2c_bare.h"
 
-int h7i2c_i2c_write_then_read_rtos_blocking(uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_quickcommand_write_rtos_blocking(uint16_t dev_address, uint32_t timeout);
-int h7i2c_smbus_quickcommand_read_rtos_blocking(uint16_t dev_address, uint32_t timeout);
+int h7i2c_i2c_write_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
+int h7i2c_i2c_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t data_size, uint8_t *data_buf, uint32_t timeout);
 
-int h7i2c_smbus_sendbyte_rtos_blocking(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_receivebyte_rtos_blocking(uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_i2c_write_then_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint16_t wr_size, uint16_t rd_size, uint8_t *wr_buf, uint8_t *rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_writebyte_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
-int h7i2c_smbus_readbyte_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_quickcommand_write_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout);
+int h7i2c_smbus_quickcommand_read_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint32_t timeout);
 
-int h7i2c_smbus_writeword_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
-int h7i2c_smbus_readword_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_sendbyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_receivebyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_processcall_rtos_blocking(uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
+int h7i2c_smbus_writebyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
+int h7i2c_smbus_readbyte_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* byte, uint32_t timeout);
 
-int h7i2c_smbus_blockwrite_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
-int h7i2c_smbus_blockread_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
+int h7i2c_smbus_writeword_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
+int h7i2c_smbus_readword_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* word, uint32_t timeout);
 
-int h7i2c_smbus_blockwritereadprocesscall_rtos_blocking(uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
+int h7i2c_smbus_processcall_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint16_t* wr_word, uint16_t* rd_word, uint32_t timeout);
 
-int h7i2c_smbus_write32_rtos_blocking(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
-int h7i2c_smbus_read32_rtos_blocking(uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_blockwrite_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* wr_buf, uint32_t timeout);
+int h7i2c_smbus_blockread_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t* rd_size, uint8_t* rd_buf, uint32_t timeout);
 
-int h7i2c_smbus_write64_rtos_blocking(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
-int h7i2c_smbus_read64_rtos_blocking(uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+int h7i2c_smbus_blockwritereadprocesscall_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint8_t wr_size, uint8_t* rd_size, uint16_t *wr_buf, uint16_t *rd_buf, uint32_t timeout);
+
+int h7i2c_smbus_write32_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+int h7i2c_smbus_read32_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint32_t* word32, uint32_t timeout);
+
+int h7i2c_smbus_write64_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+int h7i2c_smbus_read64_rtos_blocking(h7i2c_periph_t peripheral, uint16_t dev_address, uint8_t command, uint64_t* word64, uint32_t timeout);
+
 
 #endif /* INC_H7I2C_RTOS_H_ */

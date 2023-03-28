@@ -34,61 +34,28 @@
 /*                                                                                           */
 /*********************************************************************************************/
 
-#include "main.h"
-#include "h7i2c_config.h"
-
-#if H7I2C_USE_FREERTOS_IMPL == 1
-
-#include "FreeRTOS.h"
-#include "task.h"
-
-#include "h7i2c_rtos.h"
-#include "h7i2c_bare.h"
-#include "h7i2c_bare_priv.h"
+#ifndef INC_H7I2C_CONFIG_H_
+#define INC_H7I2C_CONFIG_H_
 
 
-h7i2c_i2c_ret_code_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout)
-{
-  uint32_t const timestart = HAL_GetTick();
+// Use these defines to put the peripheral under the responsibility of this driver.
+// You shall mind about collisions with the STM32Cube driver (if you use this driver,
+// the peripheral should be unconfigured in the IOC file).
+#define H7I2C_PERIPH_ENABLE_I2C1 0
+#define H7I2C_PERIPH_ENABLE_I2C2 0
+#define H7I2C_PERIPH_ENABLE_I2C3 0
+#define H7I2C_PERIPH_ENABLE_I2C4 0
 
-  // Blocking loop, waiting for the I2C peripheral to become free, to get into error state or to timeout
-  // This version yields control to scheduler if mutex is busy
-  while (HAL_GetTick() - timestart < timeout)
-  {
-    if (h7i2c_is_ready(peripheral))
-      return H7I2C_RET_CODE_OK;
-    else
-      taskYIELD();
-  }
-  return H7I2C_RET_CODE_BUSY;
-}
+// Do you want to use the FreeRTOS-compatible function implementations?
+#define H7I2C_USE_FREERTOS_IMPL 0
 
-h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
-{
-  uint32_t const timestart = HAL_GetTick();
 
-  // This infinite loop blocks the hosting task until the mutex is taken, an error takes place or time is out
-  while (HAL_GetTick() - timestart < timeout)
-  {
-    switch ( h7i2c_i2c_mutex_lock_impl(peripheral) )
-    {
-      // We got the mutex
-      case H7I2C_RET_CODE_OK:
-        return H7I2C_RET_CODE_OK;
+// Do not edit this logic if you don't understand it
+#if H7I2C_PERIPH_ENABLE_I2C1 == 1 || H7I2C_PERIPH_ENABLE_I2C2 == 1 || H7I2C_PERIPH_ENABLE_I2C3 == 1 || H7I2C_PERIPH_ENABLE_I2C4 == 1
+#define H7I2C_PERIPH_ENABLE_ANY 1
+#else
+#define H7I2C_PERIPH_ENABLE_ANY 0
+#endif
 
-      // This device is not managed by the driver
-      case H7I2C_RET_CODE_UNMANAGED_BY_DRIVER:
-        return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
 
-      // We havent't got the mutex (yet)
-      case H7I2C_RET_CODE_BUSY:
-      default:
-        taskYIELD();
-    }
-  }
-
-  // We timed out
-  return H7I2C_RET_CODE_BUSY;
-}
-
-#endif // H7I2C_USE_FREERTOS_IMPL
+#endif // INC_H7I2C_CONFIG_H_

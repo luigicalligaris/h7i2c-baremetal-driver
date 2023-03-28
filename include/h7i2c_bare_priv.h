@@ -34,61 +34,40 @@
 /*                                                                                           */
 /*********************************************************************************************/
 
-#include "main.h"
+#ifndef INC_H7I2C_BARE_PRIV_H_
+#define INC_H7I2C_BARE_PRIV_H_
+
 #include "h7i2c_config.h"
-
-#if H7I2C_USE_FREERTOS_IMPL == 1
-
-#include "FreeRTOS.h"
-#include "task.h"
-
-#include "h7i2c_rtos.h"
 #include "h7i2c_bare.h"
-#include "h7i2c_bare_priv.h"
 
+enum {H7I2C_I2C_MUTEX_UNLOCKED = 0, H7I2C_I2C_MUTEX_LOCKED = 1};
 
-h7i2c_i2c_ret_code_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, uint32_t timeout)
+typedef struct h7i2c_driver_instance_state_t
 {
-  uint32_t const timestart = HAL_GetTick();
+  h7i2c_i2c_fsm_state_t fsm_state;
 
-  // Blocking loop, waiting for the I2C peripheral to become free, to get into error state or to timeout
-  // This version yields control to scheduler if mutex is busy
-  while (HAL_GetTick() - timestart < timeout)
-  {
-    if (h7i2c_is_ready(peripheral))
-      return H7I2C_RET_CODE_OK;
-    else
-      taskYIELD();
-  }
-  return H7I2C_RET_CODE_BUSY;
-}
+  void*    i2c_base;
 
-h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout)
-{
-  uint32_t const timestart = HAL_GetTick();
+  uint32_t slave_address;
 
-  // This infinite loop blocks the hosting task until the mutex is taken, an error takes place or time is out
-  while (HAL_GetTick() - timestart < timeout)
-  {
-    switch ( h7i2c_i2c_mutex_lock_impl(peripheral) )
-    {
-      // We got the mutex
-      case H7I2C_RET_CODE_OK:
-        return H7I2C_RET_CODE_OK;
+  uint32_t cr1_value;
+  uint32_t cr2_value;
 
-      // This device is not managed by the driver
-      case H7I2C_RET_CODE_UNMANAGED_BY_DRIVER:
-        return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
+  uint32_t wr_todo;
+  uint32_t wr_done;
+  uint8_t* wr_data;
 
-      // We havent't got the mutex (yet)
-      case H7I2C_RET_CODE_BUSY:
-      default:
-        taskYIELD();
-    }
-  }
+  uint32_t rd_todo;
+  uint32_t rd_done;
+  uint8_t* rd_data;
 
-  // We timed out
-  return H7I2C_RET_CODE_BUSY;
-}
+  uint32_t timestart;
+  uint32_t timeout;
+} h7i2c_driver_instance_state_t;
 
-#endif // H7I2C_USE_FREERTOS_IMPL
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock(h7i2c_periph_t peripheral, uint32_t timeout);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_lock_impl(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral);
+h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release_fromISR(h7i2c_periph_t peripheral);
+
+#endif // INC_H7I2C_BARE_PRIV_H_
