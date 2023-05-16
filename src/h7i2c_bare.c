@@ -868,15 +868,15 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init_by_config(h7i2c_periph_t peripheral, h7i2c_p
           __HAL_RCC_GPIOC_CLK_ENABLE();
 
           // GPIOC AFRL: Set alternate function I2C3 = 4 = 0b0100 (see datasheet chapt 5) to pin PC9  (I2C3_SDA)
-          MODIFY_REG(GPIOC->AFR[0], 0b1111 << 28, 0b0100 << 28);
+          MODIFY_REG(GPIOC->AFR[1], 0b1111 << 4, 0b0100 << 4);
           // GPIOC OSPEEDR: Set very high speed = 0b11 to pin PC9
-          MODIFY_REG(GPIOC->OSPEEDR, 0b11 << 14, 0b11 << 14);
+          MODIFY_REG(GPIOC->OSPEEDR, 0b11 << 18, 0b11 << 18);
           // GPIOC PUPDR: Set pull-up = 0b01 to pin PC9
-          MODIFY_REG(GPIOC->PUPDR, 0b11 << 14, 0b01 << 14);
+          MODIFY_REG(GPIOC->PUPDR, 0b11 << 18, 0b01 << 18);
           // GPIOC OTYPEDR: Set open drain = 0b1 to pin PC9
-          MODIFY_REG(GPIOC->OTYPER, 0b1 <<  7, 0b1 <<  7);
+          MODIFY_REG(GPIOC->OTYPER, 0b1 <<  9, 0b1 <<  9);
           // GPIOC MODER: Set alternate mode = 0b10 to pins PC9
-          MODIFY_REG(GPIOC->MODER, 0b11 << 14, 0b10 << 14);
+          MODIFY_REG(GPIOC->MODER, 0b11 << 18, 0b10 << 18);
           break;
 
         case H7I2C_PIN_I2C3_SDA_PH8:
