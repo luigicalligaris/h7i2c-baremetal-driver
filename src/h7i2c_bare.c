@@ -367,6 +367,10 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
       return H7I2C_RET_CODE_UNMANAGED_BY_DRIVER;
   };
 
+  *p_mutex = H7I2C_I2C_MUTEX_UNLOCKED;
+
+  /*
+
   if (H7I2C_I2C_MUTEX_LOCKED == __LDREXB(p_mutex))
   {
     if (0 == __STREXB(H7I2C_I2C_MUTEX_UNLOCKED, p_mutex))
@@ -375,6 +379,7 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
       return H7I2C_RET_CODE_OK;
     }
   }
+  */
   return H7I2C_RET_CODE_OK;
 }
 
@@ -457,6 +462,7 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_reset_driver(h7i2c_periph_t peripheral)
 
   instance->fsm_state = H7I2C_FSM_STATE_IDLE;
   h7i2c_i2c_mutex_release(peripheral);
+
 
   return H7I2C_RET_CODE_OK;
 }
