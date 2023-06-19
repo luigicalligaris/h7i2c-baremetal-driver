@@ -369,17 +369,6 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_mutex_release(h7i2c_periph_t peripheral)
 
   *p_mutex = H7I2C_I2C_MUTEX_UNLOCKED;
 
-  /*
-
-  if (H7I2C_I2C_MUTEX_LOCKED == __LDREXB(p_mutex))
-  {
-    if (0 == __STREXB(H7I2C_I2C_MUTEX_UNLOCKED, p_mutex))
-    {
-      __DMB();// Data Memory Barrier
-      return H7I2C_RET_CODE_OK;
-    }
-  }
-  */
   return H7I2C_RET_CODE_OK;
 }
 
