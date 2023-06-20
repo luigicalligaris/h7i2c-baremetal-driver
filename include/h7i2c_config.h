@@ -37,7 +37,9 @@
 #ifndef INC_H7I2C_CONFIG_H_
 #define INC_H7I2C_CONFIG_H_
 
-// Define macro on application code to enable each peripheral.
+#include "main.h"
+
+// Declare the following macros in main.h file to put the peripheral under the responsibility of this driver.
 // You shall mind about collisions with the STM32Cube driver (if you use this driver,
 // the peripheral should be unconfigured in the IOC file).
 
