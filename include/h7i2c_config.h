@@ -60,7 +60,9 @@
 #endif
 
 // Do you want to use the FreeRTOS-compatible function implementations?
+#ifndef H7I2C_USE_FREERTOS_IMPL
 #define H7I2C_USE_FREERTOS_IMPL 0
+#endif
 
 
 // Do not edit this logic if you don't understand it
