@@ -37,9 +37,9 @@
 #ifndef INC_H7I2C_CONFIG_H_
 #define INC_H7I2C_CONFIG_H_
 
-#include "main.h"
+#include "custom_settings.h"
 
-// Declare the following macros in main.h file to put the peripheral under the responsibility of this driver.
+// Declare the following macros in a custom_settings.h file to put the peripheral under the responsibility of this driver.
 // You shall mind about collisions with the STM32Cube driver (if you use this driver,
 // the peripheral should be unconfigured in the IOC file).
 
@@ -63,7 +63,6 @@
 #ifndef H7I2C_USE_FREERTOS_IMPL
 #define H7I2C_USE_FREERTOS_IMPL 0
 #endif
-
 
 // Do not edit this logic if you don't understand it
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1 || H7I2C_PERIPH_ENABLE_I2C2 == 1 || H7I2C_PERIPH_ENABLE_I2C3 == 1 || H7I2C_PERIPH_ENABLE_I2C4 == 1
