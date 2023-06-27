@@ -37,11 +37,12 @@
 #ifndef INC_H7I2C_CONFIG_H_
 #define INC_H7I2C_CONFIG_H_
 
-#include "custom_settings.h"
+#include "main.h"
 
-// Declare the following macros in a custom_settings.h file to put the peripheral under the responsibility of this driver.
-// You shall mind about collisions with the STM32Cube driver (if you use this driver,
-// the peripheral should be unconfigured in the IOC file).
+// Override to 1 the H7I2C_PERIPH_ENABLE_I2Cx macros in main.h file or in a header file included
+// by it to put the I2Cx peripheral under the responsibility of this driver.
+// NOTE: you shall take care yourself of avoiding collisions with the STM32Cube HAL/LL drivers
+// (i.e. if you use this driver, the peripheral should be left unconfigured in the IOC editor).
 
 #ifndef H7I2C_PERIPH_ENABLE_I2C1
 #define H7I2C_PERIPH_ENABLE_I2C1 0
