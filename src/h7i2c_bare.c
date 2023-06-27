@@ -257,6 +257,9 @@ __weak h7i2c_i2c_ret_code_t h7i2c_wait_until_ready(h7i2c_periph_t peripheral, ui
   // This version loops until timeout if mutex is busy
   while (HAL_GetTick() - timestart < timeout)
   {
+    if (h7i2c_is_in_error(peripheral))
+      return H7I2C_RET_CODE_PERIPH_IN_ERR_STATE;
+
     if (h7i2c_is_ready(peripheral))
       return H7I2C_RET_CODE_OK;
   }
