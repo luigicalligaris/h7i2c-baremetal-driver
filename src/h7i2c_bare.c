@@ -505,21 +505,21 @@ h7i2c_i2c_ret_code_t h7i2c_i2c_init_by_config(h7i2c_periph_t peripheral, h7i2c_p
 #if H7I2C_PERIPH_ENABLE_I2C1 == 1
     case H7I2C_I2C1:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
-      PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C1CLKSOURCE_D2PCLK1;
+      PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C1CLKSOURCE_D2PCLK1;
       memcpy(&current_periph_init_config_i2c1, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C2 == 1
     case H7I2C_I2C2:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
-      PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C2CLKSOURCE_D2PCLK1;
+      PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C2CLKSOURCE_D2PCLK1;
       memcpy(&current_periph_init_config_i2c2, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
 #if H7I2C_PERIPH_ENABLE_I2C3 == 1
     case H7I2C_I2C3:
       PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
-      PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C3CLKSOURCE_D2PCLK1;
+      PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C3CLKSOURCE_D2PCLK1;
       memcpy(&current_periph_init_config_i2c3, init_config, sizeof(h7i2c_periph_init_config_t));
       break;
 #endif
