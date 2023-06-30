@@ -1575,6 +1575,9 @@ void H7I2C_EV_IRQHandler_Impl(h7i2c_periph_t peripheral)
 
   hardware->ICR = icr;
 
+  ((void) READ_REG(hardware->CR1));
+  ((void) READ_REG(hardware->CR2));
+
   if (READ_BIT(isr, I2C_ISR_STOPF) != 0)
   {
     instance->fsm_state = H7I2C_FSM_STATE_IDLE;
@@ -1658,6 +1661,9 @@ void H7I2C_ER_IRQHandler_Impl(h7i2c_periph_t peripheral)
   );
 
   hardware->ICR = icr;
+
+  ((void) READ_REG(hardware->CR1));
+  ((void) READ_REG(hardware->CR2));
 
   if (READ_BIT(instance->cr2_value, I2C_CR2_STOP) != 0)
     h7i2c_i2c_mutex_release_fromISR(peripheral);
