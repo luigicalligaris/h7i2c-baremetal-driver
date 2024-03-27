@@ -40,7 +40,7 @@
 
 #include "stm32h7xx_hal_gpio.h"
 #include "stm32h7xx_hal_rcc.h"
-#include "stm32h745xx.h"
+#include "stm32h7xx.h"
 
 #include "h7i2c_config.h"
 
